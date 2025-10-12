@@ -1,27 +1,67 @@
 import { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
-import { Mail, Lock, Eye, EyeOff } from "lucide-react";
-import api from "../api"; // ✅ usamos api.js
+import { Mail, Lock, Eye, EyeOff, XCircle, X as CloseIcon } from "lucide-react";
+import api from "../api";
 import AlertModal from "../components/AlertModal";
 import { AuthContext } from "../context/AuthContext.jsx";
 
 export default function Login() {
   const [form, setForm] = useState({ email: "", password: "" });
+  const [fieldErrors, setFieldErrors] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
-  const [alert, setAlert] = useState(null);
+  const [alert, setAlert] = useState(null);           // modal success
+  const [inlineError, setInlineError] = useState(""); // banner de error
+  const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
   const { loadUser } = useContext(AuthContext);
 
+  const validate = () => {
+    const errs = { email: "", password: "" };
+    const email = form.email.trim();
+    const pass = form.password;
+
+    if (!email) {
+      errs.email = "Ingresa tu correo electrónico.";
+    } else if (!/^\S+@\S+\.\S+$/.test(email)) {
+      errs.email = "El correo no tiene un formato válido.";
+    }
+
+    if (!pass) {
+      errs.password = "Ingresa tu contraseña.";
+    }
+
+    setFieldErrors(errs);
+    // retorna true si todo OK
+    return !errs.email && !errs.password;
+  };
+
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setForm((f) => ({ ...f, [name]: value }));
+    // Limpia error del campo al escribir
+    if (fieldErrors[name]) {
+      setFieldErrors((fe) => ({ ...fe, [name]: "" }));
+    }
+    // No limpiamos el banner general automáticamente para que sea “fijo”
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e.preventDefault(); // evita recarga
+    setInlineError("");
 
+    // ✅ Validación antes de llamar al backend
+    const ok = validate();
+    if (!ok) {
+      setInlineError("Revisa los campos marcados e inténtalo de nuevo.");
+      return;
+    }
+
+    setSubmitting(true);
     try {
-      // ✅ llamada con axios desde api.js
-      const { data } = await api.post("/token/", form);
+      const { data } = await api.post("/token/", {
+        email: form.email.trim(),
+        password: form.password,
+      });
 
       const { access, refresh, uuid, full_name, role } = data;
 
@@ -36,13 +76,13 @@ export default function Login() {
 
       setTimeout(() => {
         navigate(`/profile/${uuid}`);
-      }, 1500);
+      }, 1200);
     } catch (error) {
       console.error("Error en login:", error);
-      setAlert({
-        type: "error",
-        message: error.response?.data?.detail || "Credenciales inválidas"
-      });
+      // ❌ Error del backend: credenciales inválidas, etc.
+      setInlineError(error.response?.data?.detail || "Credenciales inválidas.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -50,11 +90,33 @@ export default function Login() {
     <div className="flex items-center justify-center h-screen bg-gradient-to-br from-gray-100 to-gray-200 px-4">
       <div className="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md border border-gray-200">
         <h2 className="text-3xl font-bold text-[#28364e] mb-2 text-center">¡Bienvenido!</h2>
-        <p className="text-center text-sm text-gray-500 mb-6">
+
+        <p className="text-center text-sm text-gray-500">
           Ingresa tus credenciales para continuar
         </p>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        {/* Banner de error fijo */}
+        {inlineError && (
+          <div
+            role="alert"
+            aria-live="assertive"
+            className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-start gap-2"
+          >
+            <XCircle className="w-4 h-4 mt-0.5 shrink-0" />
+            <div className="min-w-0">{inlineError}</div>
+            <button
+              type="button"
+              onClick={() => setInlineError("")}
+              className="ml-auto -mr-1 rounded p-1 text-red-500 hover:bg-red-100"
+              aria-label="Cerrar mensaje de error"
+              title="Cerrar"
+            >
+              <CloseIcon className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-5 mt-6" noValidate>
           {/* Email */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -69,11 +131,23 @@ export default function Login() {
                 name="email"
                 value={form.email}
                 onChange={handleChange}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#f4a261]"
+                className={`w-full pl-10 pr-4 py-2 border rounded focus:outline-none focus:ring-2 ${
+                  fieldErrors.email
+                    ? "border-red-300 focus:ring-red-300"
+                    : "border-gray-300 focus:ring-[#f4a261]"
+                }`}
                 placeholder="correo@ejemplo.com"
                 required
+                autoComplete="email"
+                aria-invalid={!!fieldErrors.email}
+                aria-describedby={fieldErrors.email ? "email-error" : undefined}
               />
             </div>
+            {fieldErrors.email && (
+              <p id="email-error" className="mt-1 text-xs text-red-600">
+                {fieldErrors.email}
+              </p>
+            )}
           </div>
 
           {/* Password */}
@@ -90,9 +164,16 @@ export default function Login() {
                 name="password"
                 value={form.password}
                 onChange={handleChange}
-                className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#f4a261]"
+                className={`w-full pl-10 pr-10 py-2 border rounded focus:outline-none focus:ring-2 ${
+                  fieldErrors.password
+                    ? "border-red-300 focus:ring-red-300"
+                    : "border-gray-300 focus:ring-[#f4a261]"
+                }`}
                 placeholder="********"
                 required
+                autoComplete="current-password"
+                aria-invalid={!!fieldErrors.password}
+                aria-describedby={fieldErrors.password ? "password-error" : undefined}
               />
               <button
                 type="button"
@@ -102,6 +183,11 @@ export default function Login() {
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
+            {fieldErrors.password && (
+              <p id="password-error" className="mt-1 text-xs text-red-600">
+                {fieldErrors.password}
+              </p>
+            )}
 
             <div className="text-right mt-1">
               <a href="/forgot-password" className="text-xs text-[#f4a261] hover:underline">
@@ -112,9 +198,10 @@ export default function Login() {
 
           <button
             type="submit"
-            className="w-full bg-[#f4a261] hover:bg-[#e07b19] text-white font-semibold py-2 rounded transition-colors"
+            disabled={submitting}
+            className="w-full bg-[#f4a261] hover:bg-[#e07b19] disabled:opacity-70 disabled:cursor-not-allowed text-white font-semibold py-2 rounded transition-colors"
           >
-            Iniciar sesión
+            {submitting ? "Ingresando..." : "Iniciar sesión"}
           </button>
         </form>
 
@@ -126,10 +213,10 @@ export default function Login() {
         </p>
       </div>
 
-      {/* Alert */}
-      {alert && (
+      {/* Modal solo para success */}
+      {alert?.type === "success" && (
         <AlertModal
-          type={alert.type}
+          type="success"
           message={alert.message}
           onClose={() => setAlert(null)}
         />

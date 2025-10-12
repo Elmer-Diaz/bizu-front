@@ -1,11 +1,8 @@
 import { Wrench, Laptop, Paintbrush, Users, UserPlus, Briefcase, MessageSquare } from 'lucide-react';
 
-
-
 export default function Home() {
   return (
     <div className="bg-gray-100 text-[#28364e] font-sans">
-      
       {/* HERO */}
       <section className="bg-[#28364e] text-white text-center py-24 px-6">
         <h1 className="text-4xl md:text-5xl font-bold mb-4">
@@ -15,11 +12,19 @@ export default function Home() {
           Publica tus servicios o encuentra quien te ayude en minutos.
         </p>
         <div className="flex flex-col sm:flex-row justify-center gap-4">
-          <a href="/register" className="bg-[#f4a261] hover:bg-[#e07b19] text-white py-3 px-6 rounded text-lg font-semibold">
-            Publicar servicio
+          {/* Botón para registrarse como servidor */}
+          <a
+            href="/register?role=provider"
+            className="bg-[#f4a261] hover:bg-[#e07b19] text-white py-3 px-6 rounded text-lg font-semibold"
+          >
+            Registrarse como Servidor
           </a>
-          <a href="/search" className="border border-white py-3 px-6 rounded text-lg font-semibold">
-            Ver servicios
+          {/* Botón para registrarse como cliente */}
+          <a
+            href="/register?role=client"
+            className="border border-white py-3 px-6 rounded text-lg font-semibold hover:bg-white hover:text-[#28364e] transition"
+          >
+            Registrarse como Cliente
           </a>
         </div>
       </section>
@@ -74,15 +79,21 @@ export default function Home() {
         <h2 className="text-3xl md:text-4xl font-bold mb-12">Lo que dicen nuestros usuarios</h2>
         <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
           <blockquote className="bg-gray-100 p-6 rounded-lg shadow-sm">
-            <p className="italic">"Encontré un técnico en minutos y me solucionó el problema. ¡Excelente plataforma!"</p>
+            <p className="italic">
+              "Encontré un técnico en minutos y me solucionó el problema. ¡Excelente plataforma!"
+            </p>
             <footer className="mt-4 text-sm text-gray-600">— Carolina R.</footer>
           </blockquote>
           <blockquote className="bg-gray-100 p-6 rounded-lg shadow-sm">
-            <p className="italic">"Publicar mi servicio fue muy fácil. Ya tengo 5 clientes gracias a Bizu."</p>
+            <p className="italic">
+              "Publicar mi servicio fue muy fácil. Ya tengo 5 clientes gracias a Bizu."
+            </p>
             <footer className="mt-4 text-sm text-gray-600">— Julián M.</footer>
           </blockquote>
           <blockquote className="bg-gray-100 p-6 rounded-lg shadow-sm">
-            <p className="italic">"Me encanta lo simple y rápido que es todo. Muy recomendado."</p>
+            <p className="italic">
+              "Me encanta lo simple y rápido que es todo. Muy recomendado."
+            </p>
             <footer className="mt-4 text-sm text-gray-600">— Lorena T.</footer>
           </blockquote>
         </div>
@@ -91,10 +102,23 @@ export default function Home() {
       {/* CTA FINAL */}
       <section className="py-20 text-center bg-[#28364e] text-white px-6">
         <h2 className="text-3xl md:text-4xl mb-4 font-bold">¿Listo para comenzar?</h2>
-        <p className="text-lg mb-6">Publica tu servicio o encuentra el profesional ideal en segundos.</p>
-        <a href="/register" className="bg-[#f4a261] hover:bg-[#e07b19] text-white py-3 px-6 rounded text-lg font-semibold">
-          Unirme a Bizu
-        </a>
+        <p className="text-lg mb-6">
+          Publica tu servicio o encuentra el profesional ideal en segundos.
+        </p>
+        <div className="flex flex-col sm:flex-row justify-center gap-4">
+          <a
+            href="/register?role=provider"
+            className="bg-[#f4a261] hover:bg-[#e07b19] text-white py-3 px-6 rounded text-lg font-semibold"
+          >
+            Soy Servidor
+          </a>
+          <a
+            href="/register?role=client"
+            className="border border-white py-3 px-6 rounded text-lg font-semibold hover:bg-white hover:text-[#28364e] transition"
+          >
+            Soy Cliente
+          </a>
+        </div>
       </section>
     </div>
   );
