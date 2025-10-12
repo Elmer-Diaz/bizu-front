@@ -1,53 +1,87 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Lock, Eye, EyeOff } from "lucide-react";
-import api from "../api"; // ✅ Usamos la instancia global con interceptores
-import AlertModal from "../components/AlertModal";
+import { Lock, Eye, EyeOff, X as CloseIcon } from "lucide-react";
+import api from "../api"; // instancia con interceptores
+import { useToast } from "../components/ToastProvider";
+import { getErrorMessage } from "../utils/errors";
 
 export default function ResetPassword() {
   const { uid, token } = useParams();
   const navigate = useNavigate();
+
   const [form, setForm] = useState({ password: "", confirmPassword: "" });
   const [showPassword, setShowPassword] = useState(false);
-  const [alert, setAlert] = useState(null);
+
   const [loading, setLoading] = useState(false);
+  const [inlineError, setInlineError] = useState(""); // banner dentro del card
+  const [fieldErrors, setFieldErrors] = useState({ password: "", confirmPassword: "" });
+
+  const { success: toastSuccess, error: toastError } = useToast();
+  const passRef = useRef(null);
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setForm((f) => ({ ...f, [name]: value }));
+    if (fieldErrors[name]) setFieldErrors((fe) => ({ ...fe, [name]: "" }));
+    if (inlineError) setInlineError("");
+  };
+
+  const validate = () => {
+    const errs = { password: "", confirmPassword: "" };
+    let ok = true;
+
+    if (!form.password) {
+      errs.password = "Ingresa la nueva contraseña.";
+      ok = false;
+    }
+    if (!form.confirmPassword) {
+      errs.confirmPassword = "Confirma la nueva contraseña.";
+      ok = false;
+    }
+    if (form.password && form.confirmPassword && form.password !== form.confirmPassword) {
+      errs.password = "Las contraseñas no coinciden.";
+      errs.confirmPassword = "Las contraseñas no coinciden.";
+      ok = false;
+    }
+    setFieldErrors(errs);
+    return ok;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    setInlineError("");
 
-    // Validación de contraseñas
-    if (form.password !== form.confirmPassword) {
-      setAlert({ type: "error", message: "Las contraseñas no coinciden." });
-      setLoading(false);
+    const ok = validate();
+    if (!ok) {
+      setInlineError("Revisa los campos marcados e inténtalo de nuevo.");
+      // Llevar foco al primer campo
+      passRef.current?.focus();
       return;
     }
 
+    setLoading(true);
     try {
-      // ✅ Llamada a API usando axios configurado
-      await api.post(`/password-reset-confirm/${uid}/${token}/`, {
-        password: form.password,
-      });
+      await api.post(
+        `/password-reset-confirm/${uid}/${token}/`,
+        { password: form.password },
+        { _skipAuthHandler: true } // evita redirección automática en 401
+      );
 
-      setAlert({ type: "success", message: "Contraseña restablecida correctamente." });
-
-      // Redirigir después de un pequeño delay
-      setTimeout(() => {
-        navigate("/login");
-      }, 1500);
-
+      toastSuccess("Contraseña restablecida correctamente 🎉", { duration: 3500 });
+      setTimeout(() => navigate("/login"), 1200);
     } catch (err) {
-      console.error("Error al restablecer contraseña:", err);
+      const msg = getErrorMessage(err, "Token inválido o expirado.");
+      setInlineError(msg);
+      toastError(msg, { duration: 7000 });
 
-      // Mostrar mensaje desde backend si existe
-      if (err.response?.data?.detail) {
-        setAlert({ type: "error", message: err.response.data.detail });
-      } else {
-        setAlert({ type: "error", message: "Token inválido o expirado." });
+      // Si tu backend envía errores por campo, mapéalos:
+      const data = err?.response?.data;
+      if (data && typeof data === "object") {
+        const next = { password: "", confirmPassword: "" };
+        if (Array.isArray(data.password) && data.password.length) next.password = String(data.password[0]);
+        if (typeof data.password === "string") next.password = data.password;
+        // confirmPassword no suele venir del backend, pero lo dejamos por consistencia
+        setFieldErrors((fe) => ({ ...fe, ...next }));
       }
     } finally {
       setLoading(false);
@@ -57,14 +91,34 @@ export default function ResetPassword() {
   return (
     <div className="flex items-center justify-center h-screen bg-gradient-to-br from-gray-100 to-gray-200 px-4">
       <div className="bg-white p-8 rounded-xl shadow-xl w-full max-w-md border border-gray-200">
-        <h2 className="text-2xl font-bold text-[#28364e] mb-4 text-center">
+        <h2 className="text-2xl font-bold text-[#28364e] mb-2 text-center">
           Restablecer contraseña
         </h2>
-        <p className="text-sm text-gray-600 mb-6 text-center">
+        <p className="text-sm text-gray-600 text-center">
           Ingresa tu nueva contraseña
         </p>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        {/* Banner fijo de error */}
+        {inlineError && (
+          <div
+            role="alert"
+            aria-live="assertive"
+            className="mt-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-start gap-2"
+          >
+            <div className="min-w-0">{inlineError}</div>
+            <button
+              type="button"
+              onClick={() => setInlineError("")}
+              className="ml-auto -mr-1 rounded p-1 text-red-500 hover:bg-red-100"
+              aria-label="Cerrar mensaje de error"
+              title="Cerrar"
+            >
+              <CloseIcon className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-5 mt-6" noValidate>
           {/* Nueva contraseña */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -75,12 +129,19 @@ export default function ResetPassword() {
                 <Lock size={18} />
               </span>
               <input
+                ref={passRef}
                 type={showPassword ? "text" : "password"}
                 name="password"
                 value={form.password}
                 onChange={handleChange}
-                className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#f4a261]"
+                className={`w-full pl-10 pr-10 py-2 border rounded focus:outline-none focus:ring-2 ${
+                  fieldErrors.password
+                    ? "border-red-300 focus:ring-red-300"
+                    : "border-gray-300 focus:ring-[#f4a261]"
+                }`}
                 required
+                aria-invalid={!!fieldErrors.password}
+                aria-describedby={fieldErrors.password ? "password-error" : undefined}
               />
               <button
                 type="button"
@@ -90,6 +151,11 @@ export default function ResetPassword() {
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
+            {fieldErrors.password && (
+              <p id="password-error" className="mt-1 text-xs text-red-600">
+                {fieldErrors.password}
+              </p>
+            )}
           </div>
 
           {/* Confirmar contraseña */}
@@ -102,28 +168,30 @@ export default function ResetPassword() {
               name="confirmPassword"
               value={form.confirmPassword}
               onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#f4a261]"
+              className={`w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 ${
+                fieldErrors.confirmPassword
+                  ? "border-red-300 focus:ring-red-300"
+                  : "border-gray-300 focus:ring-[#f4a261]"
+              }`}
               required
+              aria-invalid={!!fieldErrors.confirmPassword}
+              aria-describedby={fieldErrors.confirmPassword ? "confirm-password-error" : undefined}
             />
+            {fieldErrors.confirmPassword && (
+              <p id="confirm-password-error" className="mt-1 text-xs text-red-600">
+                {fieldErrors.confirmPassword}
+              </p>
+            )}
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-[#f4a261] hover:bg-[#e07b19] text-white font-semibold py-2 rounded transition-colors"
+            className="w-full bg-[#f4a261] hover:bg-[#e07b19] disabled:opacity-70 disabled:cursor-not-allowed text-white font-semibold py-2 rounded transition-colors"
           >
             {loading ? "Guardando..." : "Restablecer contraseña"}
           </button>
         </form>
-
-        {/* Modal de alerta */}
-        {alert && (
-          <AlertModal
-            type={alert.type}
-            message={alert.message}
-            onClose={() => setAlert(null)}
-          />
-        )}
       </div>
     </div>
   );

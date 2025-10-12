@@ -4,20 +4,18 @@ import axios from "axios";
 const API_ROOT = import.meta.env.VITE_API_URL; // ej: https://bizu-back.onrender.com
 
 if (!API_ROOT) {
-  // Ayuda en tiempo de build si te olvidas la env var.
-  // (En producción simplemente no tendrías esta consola abierta)
   console.warn("⚠️ VITE_API_URL no está definida");
 }
 
 // Instancia principal apuntando a /api
 const api = axios.create({
   baseURL: `${API_ROOT}/api`,
-  // timeout: 15000, // opcional
+  // timeout: 15000,
 });
 
-// ------------------------------------------------------
-// Storage helpers (puedes cambiarlos por cookies si quieres)
-// ------------------------------------------------------
+// ----------------------
+// Storage helpers
+// ----------------------
 function getAccess() {
   return localStorage.getItem("access");
 }
@@ -33,11 +31,9 @@ export function clearAuth() {
   localStorage.removeItem("refresh");
 }
 
-// ------------------------------------------------------
+// ----------------------
 // Request interceptor
-// - Adjunta Authorization si hay token
-// - Si data es FormData, no forces Content-Type (deja que el browser lo ponga)
-// ------------------------------------------------------
+// ----------------------
 api.interceptors.request.use(
   (config) => {
     const token = getAccess();
@@ -46,13 +42,12 @@ api.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
 
-    // Evitar fijar manualmente 'Content-Type' si es FormData
+    // No fuerces content-type si es FormData
     if (config.data instanceof FormData) {
       if (config.headers && config.headers["Content-Type"]) {
         delete config.headers["Content-Type"];
       }
     } else {
-      // Para JSON normal, nos aseguramos del header estándar
       config.headers = config.headers || {};
       if (!config.headers["Content-Type"]) {
         config.headers["Content-Type"] = "application/json";
@@ -64,16 +59,16 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// ------------------------------------------------------
-// Refresh token (con cola para múltiples 401 simultáneos)
-// ------------------------------------------------------
+// ----------------------
+// Refresh token con cola
+// ----------------------
 let isRefreshing = false;
 let refreshSubscribers = [];
 
 function subscribeTokenRefresh(cb) {
   refreshSubscribers.push(cb);
 }
-function onRrefreshed(newToken) {
+function onRefreshed(newToken) {
   refreshSubscribers.forEach((cb) => cb(newToken));
   refreshSubscribers = [];
 }
@@ -90,31 +85,40 @@ async function refreshAccessToken() {
   return access;
 }
 
-// ------------------------------------------------------
+// ----------------------
 // Response interceptor
-// - Si 401, intenta refrescar y reintenta la request original
-// ------------------------------------------------------
+// ----------------------
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    const original = error.config;
+    const original = error.config || {};
+    const status = error?.response?.status;
 
-    // Si no hay respuesta o no es 401, o ya lo intentamos, salimos
-    if (!error.response || error.response.status !== 401 || original._retry) {
+    // Si no hay respuesta / no es 401 / ya reintentamos => salir
+    if (!error.response || status !== 401 || original._retry) {
       return Promise.reject(error);
     }
 
-    // Evita intentar refrescar el propio endpoint de refresh o login
     const url = (original.url || "").toString();
-    if (url.includes("/token/refresh") || url.includes("/token/") || url.includes("/login")) {
-      clearAuth();
-      if (typeof window !== "undefined") window.location.href = "/login";
+
+    // Flags/paths para controlar el manejo
+    const isLoginEndpoint =
+      url.includes("/token/") && !url.includes("/token/refresh"); // POST /token/ (login)
+    const isRefreshEndpoint = url.includes("/token/refresh");
+    const skipAuthHandler = original._skipAuthHandler === true;
+
+    // ❗ NUNCA redirigir/refresh si:
+    // - petición marcada con _skipAuthHandler (por ejemplo login),
+    // - es el propio endpoint de login,
+    // - es el endpoint de refresh.
+    if (skipAuthHandler || isLoginEndpoint || isRefreshEndpoint) {
       return Promise.reject(error);
     }
 
+    // Marca para no entrar en bucle
     original._retry = true;
 
-    // Si ya hay un refresh en curso, esperamos a que termine
+    // Si ya hay un refresh en curso, nos suscribimos
     if (isRefreshing) {
       return new Promise((resolve, reject) => {
         subscribeTokenRefresh((newToken) => {
@@ -129,31 +133,36 @@ api.interceptors.response.use(
       });
     }
 
-    // Disparamos un refresh nuevo
+    // Disparar refresh
     isRefreshing = true;
     try {
       const newAccess = await refreshAccessToken();
       isRefreshing = false;
-      onRrefreshed(newAccess);
+      onRefreshed(newAccess);
 
       original.headers = original.headers || {};
       original.headers.Authorization = `Bearer ${newAccess}`;
       return api(original);
     } catch (err) {
       isRefreshing = false;
-      onRrefreshed(null); // Notificar fracaso a los que esperan
+      onRefreshed(null); // Notificar fracaso a los que esperan
       clearAuth();
-      if (typeof window !== "undefined") window.location.href = "/login";
+      if (typeof window !== "undefined") window.location.assign("/login");
       return Promise.reject(err);
     }
   }
 );
 
-// ------------------------------------------------------
-// Helpers opcionales (login/logout)
-// ------------------------------------------------------
+// ----------------------
+// Helpers opcionales
+// ----------------------
 export async function login({ email, password }) {
-  const res = await api.post("/token/", { email, password });
+  // ⚠️ En login marcamos _skipAuthHandler para que un 401 NO redirija ni refresque
+  const res = await api.post(
+    "/token/",
+    { email, password },
+    { _skipAuthHandler: true }
+  );
   const { access, refresh } = res.data || {};
   setAuthTokens({ access, refresh });
   return res;
@@ -161,7 +170,7 @@ export async function login({ email, password }) {
 
 export function logout() {
   clearAuth();
-  if (typeof window !== "undefined") window.location.href = "/login";
+  if (typeof window !== "undefined") window.location.assign("/login");
 }
 
 export default api;

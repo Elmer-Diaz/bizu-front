@@ -1,11 +1,12 @@
 // src/pages/Search.jsx
 import { useEffect, useState } from "react";
-import { MapPin, ChevronDown } from "lucide-react";
+import { MapPin, ChevronDown, X as CloseIcon } from "lucide-react";
 import { categories } from "../constants/categories";
 import { cities } from "../constants/cities";
 import { useNavigate } from "react-router-dom";
 import api from "../api"; // 🔹 API con tokens automáticos
-import AlertModal from "../components/AlertModal";
+import { useToast } from "../components/ToastProvider";
+import { getErrorMessage } from "../utils/errors";
 
 const Search = () => {
   const [providers, setProviders] = useState([]);
@@ -13,37 +14,37 @@ const Search = () => {
   const [category, setCategory] = useState("");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
+
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const pageSize = 9;
 
-  // Estado para manejar el modal de alerta
-  const [alertData, setAlertData] = useState(null);
+  // Banner fijo dentro de la página
+  const [inlineError, setInlineError] = useState("");
 
   const navigate = useNavigate();
+  const { success: toastSuccess, error: toastError } = useToast();
 
-  // Mostrar alerta
-  const showAlert = ({ type, title, message }) => {
-    setAlertData({ type, title, message });
-  };
-
-  // Obtener proveedores
   const fetchProviders = async (page = 1) => {
     setLoading(true);
+    setInlineError("");
 
     let url = `/providers/?page=${page}`;
     if (city) url += `&city=${city}`;
     if (category) url += `&category=${category}`;
-    if (search) url += `&search=${search.trim()}`;
+    if (search) url += `&search=${encodeURIComponent(search.trim())}`;
 
     try {
       const res = await api.get(url);
       setProviders(res.data.results || []);
-      setTotalPages(Math.ceil(res.data.count / pageSize));
+      setTotalPages(Math.ceil((res.data.count || 0) / pageSize));
       setCurrentPage(page);
     } catch (err) {
-      console.error("Error al cargar proveedores", err);
+      const msg = getErrorMessage(err, "Error al cargar proveedores.");
       setProviders([]);
+      setInlineError(msg);
+      toastError(msg, { duration: 7000 });
+      console.error("Error al cargar proveedores", err);
     } finally {
       setLoading(false);
     }
@@ -51,33 +52,21 @@ const Search = () => {
 
   useEffect(() => {
     fetchProviders();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Aplicar filtros
   const handleFilter = () => {
     if (!city) {
-      showAlert({
-        type: "warning",
-        title: "Falta la ciudad",
-        message: "Por favor selecciona una ciudad antes de aplicar filtros.",
-      });
+      const msg = "Por favor selecciona una ciudad antes de aplicar filtros.";
+      setInlineError(msg);
+      toastError(msg);
       return;
     }
-    fetchProviders();
+    fetchProviders(1);
   };
 
   return (
     <div className="bg-gray-100 min-h-screen">
-      {/* Modal de alerta */}
-      {alertData && (
-        <AlertModal
-          type={alertData.type}
-          title={alertData.title}
-          message={alertData.message}
-          onClose={() => setAlertData(null)}
-        />
-      )}
-
       {/* FILTROS */}
       <section className="bg-white py-6 shadow-sm border-b border-gray-200">
         <div className="container mx-auto px-4">
@@ -89,6 +78,9 @@ const Search = () => {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="flex-1 px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-orange-400"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleFilter();
+              }}
             />
 
             {/* Categoría */}
@@ -140,6 +132,26 @@ const Search = () => {
               Filtrar
             </button>
           </div>
+
+          {/* Banner fijo de error (filtros/servidor) */}
+          {inlineError && (
+            <div
+              role="alert"
+              aria-live="assertive"
+              className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-start gap-2"
+            >
+              <div className="min-w-0">{inlineError}</div>
+              <button
+                type="button"
+                onClick={() => setInlineError("")}
+                className="ml-auto -mr-1 rounded p-1 text-red-500 hover:bg-red-100"
+                aria-label="Cerrar mensaje de error"
+                title="Cerrar"
+              >
+                <CloseIcon className="w-4 h-4" />
+              </button>
+            </div>
+          )}
         </div>
       </section>
 
@@ -190,16 +202,14 @@ const Search = () => {
                   <div className="inline-flex items-center space-x-1">
                     {/* Anterior */}
                     <button
-                      onClick={() =>
-                        currentPage > 1 && fetchProviders(currentPage - 1)
-                      }
+                      onClick={() => currentPage > 1 && fetchProviders(currentPage - 1)}
                       className="px-3 py-1 rounded-md bg-white border text-sm disabled:opacity-50"
                       disabled={currentPage === 1}
                     >
                       ←
                     </button>
 
-                    {/* Páginas */}
+                    {/* Páginas (compactas con puntos) */}
                     {Array.from({ length: totalPages }, (_, i) => i + 1)
                       .filter(
                         (pageNum) =>
@@ -208,8 +218,7 @@ const Search = () => {
                           Math.abs(pageNum - currentPage) <= 1
                       )
                       .reduce((acc, pageNum, i, arr) => {
-                        if (i > 0 && pageNum - arr[i - 1] > 1)
-                          acc.push(`dots-${i}`);
+                        if (i > 0 && pageNum - arr[i - 1] > 1) acc.push(`dots-${i}`);
                         acc.push(pageNum);
                         return acc;
                       }, [])
@@ -235,10 +244,7 @@ const Search = () => {
 
                     {/* Siguiente */}
                     <button
-                      onClick={() =>
-                        currentPage < totalPages &&
-                        fetchProviders(currentPage + 1)
-                      }
+                      onClick={() => currentPage < totalPages && fetchProviders(currentPage + 1)}
                       className="px-3 py-1 rounded-md bg-white border text-sm disabled:opacity-50"
                       disabled={currentPage === totalPages}
                     >

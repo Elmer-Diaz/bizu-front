@@ -1,19 +1,27 @@
-import { useState, useContext } from "react";
+import { useState, useContext, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Mail, Lock, Eye, EyeOff, XCircle, X as CloseIcon } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, XCircle, X as CloseIcon, AlertCircle } from "lucide-react";
 import api from "../api";
-import AlertModal from "../components/AlertModal";
 import { AuthContext } from "../context/AuthContext.jsx";
+import { useToast } from "../components/ToastProvider";
+import { getErrorMessage } from "../utils/errors";
 
 export default function Login() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [fieldErrors, setFieldErrors] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
-  const [alert, setAlert] = useState(null);           // modal success
-  const [inlineError, setInlineError] = useState(""); // banner de error
+
+  // ⚠️ inlineError: banner bajo el título (errores de validación u otros)
+  const [inlineError, setInlineError] = useState("");
+  // ⚠️ authError: mensaje específico de credenciales inválidas debajo del subtítulo
+  const [authError, setAuthError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
   const navigate = useNavigate();
   const { loadUser } = useContext(AuthContext);
+  const { success: toastSuccess, error: toastError } = useToast();
+
+  const passwordInputRef = useRef(null);
 
   const validate = () => {
     const errs = { email: "", password: "" };
@@ -31,25 +39,22 @@ export default function Login() {
     }
 
     setFieldErrors(errs);
-    // retorna true si todo OK
     return !errs.email && !errs.password;
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((f) => ({ ...f, [name]: value }));
-    // Limpia error del campo al escribir
-    if (fieldErrors[name]) {
-      setFieldErrors((fe) => ({ ...fe, [name]: "" }));
-    }
-    // No limpiamos el banner general automáticamente para que sea “fijo”
+    if (fieldErrors[name]) setFieldErrors((fe) => ({ ...fe, [name]: "" }));
+    // Si el usuario vuelve a escribir, limpiamos el mensaje de credenciales inválidas
+    if (authError) setAuthError("");
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault(); // evita recarga
+    e.preventDefault();
     setInlineError("");
+    setAuthError("");
 
-    // ✅ Validación antes de llamar al backend
     const ok = validate();
     if (!ok) {
       setInlineError("Revisa los campos marcados e inténtalo de nuevo.");
@@ -62,9 +67,9 @@ export default function Login() {
         email: form.email.trim(),
         password: form.password,
       });
+      
 
       const { access, refresh, uuid, full_name, role } = data;
-
       localStorage.setItem("access", access);
       localStorage.setItem("refresh", refresh);
       localStorage.setItem("uuid", uuid);
@@ -72,15 +77,26 @@ export default function Login() {
       localStorage.setItem("role", role);
 
       await loadUser();
-      setAlert({ type: "success", message: "Inicio de sesión exitoso" });
+      toastSuccess("Inicio de sesión exitoso 🎉", { duration: 3500 });
 
       setTimeout(() => {
         navigate(`/profile/${uuid}`);
       }, 1200);
-    } catch (error) {
-      console.error("Error en login:", error);
-      // ❌ Error del backend: credenciales inválidas, etc.
-      setInlineError(error.response?.data?.detail || "Credenciales inválidas.");
+    } catch (err) {
+      const status = err?.response?.status;
+      // Si el backend devuelve 400/401 => mostrar credenciales inválidas debajo del subtítulo y marcar campos
+      if (status === 400 || status === 401) {
+        setAuthError("Credenciales inválidas.");
+        setFieldErrors({ email: "Revisa tu correo.", password: "Revisa tu contraseña." });
+        // Opcional: enfocar el campo contraseña
+        passwordInputRef.current?.focus();
+      } else {
+        // Otros errores: toast + banner general
+        const msg = getErrorMessage(err, "Ocurrió un error al iniciar sesión.");
+        toastError(msg, { duration: 7000 });
+        setInlineError(msg);
+      }
+      console.error("Error en login:", { status, data: err?.response?.data });
     } finally {
       setSubmitting(false);
     }
@@ -95,12 +111,23 @@ export default function Login() {
           Ingresa tus credenciales para continuar
         </p>
 
-        {/* Banner de error fijo */}
+        {/* ⚠️ Mensaje fijo de credenciales inválidas (aparece justo debajo del subtítulo) */}
+        {authError && (
+          <div
+            role="alert"
+            className="mt-3 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700 flex items-start gap-2"
+          >
+            <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+            <div className="min-w-0">{authError}</div>
+          </div>
+        )}
+
+        {/* Banner de error fijo para otros casos (validaciones u otros errores) */}
         {inlineError && (
           <div
             role="alert"
             aria-live="assertive"
-            className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-start gap-2"
+            className="mt-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-start gap-2"
           >
             <XCircle className="w-4 h-4 mt-0.5 shrink-0" />
             <div className="min-w-0">{inlineError}</div>
@@ -160,6 +187,7 @@ export default function Login() {
                 <Lock size={18} />
               </span>
               <input
+                ref={passwordInputRef}
                 type={showPassword ? "text" : "password"}
                 name="password"
                 value={form.password}
@@ -212,15 +240,6 @@ export default function Login() {
           </a>
         </p>
       </div>
-
-      {/* Modal solo para success */}
-      {alert?.type === "success" && (
-        <AlertModal
-          type="success"
-          message={alert.message}
-          onClose={() => setAlert(null)}
-        />
-      )}
     </div>
   );
 }

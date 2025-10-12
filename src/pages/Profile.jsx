@@ -16,10 +16,15 @@ import {
 import api from "../api";
 import { AuthContext } from "../context/AuthContext";
 
+// ⬇️ NUEVO: toasts y util de errores
+import { useToast } from "../components/ToastProvider";
+import { getErrorMessage } from "../utils/errors";
+
 export default function PublicProfile() {
   const { uuid } = useParams();
   const location = useLocation();
   const { user, setUser } = useContext(AuthContext);
+  const { success: toastSuccess, error: toastError } = useToast(); // ⬅️ toasts
 
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
@@ -56,11 +61,13 @@ export default function PublicProfile() {
         const { data } = await api.get(`/profile/${uuid}/`);
         setData(data);
       } catch (err) {
-        setError(err.response?.data?.detail || "Perfil no encontrado");
+        const msg = getErrorMessage(err, "Perfil no encontrado");
+        setError(msg);
+        toastError(msg);
       }
     };
     fetchProfile();
-  }, [uuid]);
+  }, [uuid, toastError]);
 
   // Activar/Desactivar (admin)
   const toggleAccountStatus = async () => {
@@ -71,8 +78,9 @@ export default function PublicProfile() {
         is_active: !data.is_active,
       });
       setData((prev) => ({ ...prev, is_active: !prev.is_active }));
+      toastSuccess(`Cuenta ${!data.is_active ? "activada" : "desactivada"} correctamente`);
     } catch (err) {
-      alert(err.response?.data?.detail || "Error cambiando estado de la cuenta");
+      toastError(getErrorMessage(err, "Error cambiando estado de la cuenta"));
     } finally {
       setLoadingAction(false);
     }
@@ -93,8 +101,9 @@ export default function PublicProfile() {
       if (myUuid === uuid) {
         setUser((prev) => ({ ...prev, profile: { ...prev.profile, photo: updated.profile.photo } }));
       }
+      toastSuccess("¡Foto de perfil actualizada!");
     } catch (err) {
-      alert(err.response?.data?.detail || "Error subiendo la foto de perfil");
+      toastError(getErrorMessage(err, "Error subiendo la foto de perfil"));
     } finally {
       setUploadingPhoto(false);
     }
@@ -176,11 +185,12 @@ export default function PublicProfile() {
         }
       } catch (e) {
         console.error("Error cargando reseñas:", e?.response?.data || e.message);
+        toastError(getErrorMessage(e, "No se pudieron cargar las reseñas."));
       } finally {
         setReviewsLoading(false);
       }
     },
-    [providerUuid, myUuid]
+    [providerUuid, myUuid, toastError]
   );
 
   useEffect(() => {
@@ -192,7 +202,7 @@ export default function PublicProfile() {
     e.preventDefault();
     if (!providerUuid || !canReview) return;
     if (!reviewRating || reviewRating < 1 || reviewRating > 5) {
-      alert("Selecciona una calificación (1 a 5).");
+      toastError("Selecciona una calificación (1 a 5).");
       return;
     }
     try {
@@ -210,10 +220,10 @@ export default function PublicProfile() {
       }
       setEditingReviewUuid(null);
       await loadReviews(1);
-      alert("¡Reseña guardada!");
+      toastSuccess("¡Reseña guardada!");
     } catch (err) {
       console.error("Error al publicar reseña:", err?.response?.data || err.message);
-      alert(err?.response?.data?.detail || "No se pudo enviar la reseña.");
+      toastError(getErrorMessage(err, "No se pudo enviar la reseña."));
     } finally {
       setSubmittingReview(false);
     }
@@ -228,13 +238,12 @@ export default function PublicProfile() {
 
   const onCancelEdit = () => {
     setEditingReviewUuid(null);
-    // Volver a los valores actuales (pero sin mostrar el form)
     setReviewText("");
     setReviewRating(0);
   };
 
   const onDeleteReview = async (reviewUuid) => {
-    const ok = window.confirm("¿Eliminar esta reseña?");
+    const ok = window.confirm("¿Eliminar esta reseña?"); // opcional: te puedo pasar un modal bonito luego
     if (!ok) return;
     try {
       await api.delete(`/reviews/${reviewUuid}/delete/`);
@@ -245,8 +254,9 @@ export default function PublicProfile() {
         setEditingReviewUuid(null);
       }
       await loadReviews(1);
+      toastSuccess("Reseña eliminada.");
     } catch (err) {
-      alert(err?.response?.data?.detail || "No se pudo eliminar.");
+      toastError(getErrorMessage(err, "No se pudo eliminar la reseña."));
     }
   };
 
@@ -399,8 +409,9 @@ export default function PublicProfile() {
                 <button
                   onClick={toggleAccountStatus}
                   disabled={loadingAction}
-                  className={`px-6 py-3 rounded-lg text-lg font-medium transition ${is_active ? "bg-red-500 hover:bg-red-600 text-white" : "bg-green-500 hover:bg-green-600 text-white"
-                    }`}
+                  className={`px-6 py-3 rounded-lg text-lg font-medium transition ${
+                    is_active ? "bg-red-500 hover:bg-red-600 text-white" : "bg-green-500 hover:bg-green-600 text-white"
+                  }`}
                 >
                   {loadingAction ? "Procesando..." : is_active ? "Desactivar cuenta" : "Activar cuenta"}
                 </button>
@@ -423,7 +434,7 @@ export default function PublicProfile() {
             ) : !user ? (
               <div className="text-center mt-6">
                 <a
-                  href={`/login?next=${encodeURIComponent(location.pathname + location.search)}`}
+                  href={loginUrl}
                   className="inline-flex items-center gap-2 bg-[#28364e] hover:opacity-90 text-white px-6 py-3 rounded-lg text-lg font-medium"
                 >
                   Inicia sesión para contactar
@@ -477,8 +488,8 @@ export default function PublicProfile() {
                       {submittingReview
                         ? "Enviando..."
                         : editingReviewUuid
-                          ? "Guardar cambios"
-                          : "Publicar reseña"}
+                        ? "Guardar cambios"
+                        : "Publicar reseña"}
                     </button>
 
                     {editingReviewUuid && (
@@ -543,7 +554,6 @@ export default function PublicProfile() {
                   );
                 })}
               </div>
-
 
               {/* Paginación simple */}
               {reviewsCount > reviews.length && (
