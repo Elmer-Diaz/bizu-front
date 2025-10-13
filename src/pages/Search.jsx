@@ -1,12 +1,28 @@
 // src/pages/Search.jsx
-import { useEffect, useState } from "react";
-import { MapPin, ChevronDown, X as CloseIcon } from "lucide-react";
+import { useEffect, useState, useContext, useMemo } from "react";
+import { MapPin, ChevronDown, X as CloseIcon, Star, MessageCircle } from "lucide-react";
 import { categories } from "../constants/categories";
 import { cities } from "../constants/cities";
 import { useNavigate } from "react-router-dom";
 import api from "../api"; // 🔹 API con tokens automáticos
 import { useToast } from "../components/ToastProvider";
 import { getErrorMessage } from "../utils/errors";
+import { AuthContext } from "../context/AuthContext"; // ⬅️ para saber si hay sesión
+
+const StarReadOnly = ({ value = 0 }) => {
+  const filled = Math.round(Number(value) || 0); // redondeo simple
+  return (
+    <div className="flex items-center gap-1" aria-label={`${value} de 5`}>
+      {[1, 2, 3, 4, 5].map((n) => (
+        <Star
+          key={n}
+          className={`w-4 h-4 ${n <= filled ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`}
+        />
+      ))}
+      <span className="text-xs text-gray-500 ml-1">{Number(value || 0).toFixed(1)}</span>
+    </div>
+  );
+};
 
 const Search = () => {
   const [providers, setProviders] = useState([]);
@@ -19,11 +35,11 @@ const Search = () => {
   const [totalPages, setTotalPages] = useState(1);
   const pageSize = 9;
 
-  // Banner fijo dentro de la página
   const [inlineError, setInlineError] = useState("");
 
   const navigate = useNavigate();
   const { success: toastSuccess, error: toastError } = useToast();
+  const { user } = useContext(AuthContext); // ⬅️ saber si hay sesión
 
   const fetchProviders = async (page = 1) => {
     setLoading(true);
@@ -133,7 +149,7 @@ const Search = () => {
             </button>
           </div>
 
-          {/* Banner fijo de error (filtros/servidor) */}
+          {/* Banner fijo de error */}
           {inlineError && (
             <div
               role="alert"
@@ -171,29 +187,85 @@ const Search = () => {
           ) : (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {providers.map((user) => (
-                  <div
-                    key={user.uuid}
-                    className="bg-white rounded-xl shadow-md p-5 text-center hover:shadow-lg transition"
-                  >
-                    <img
-                      src={user.photo || "https://placehold.co/100x100?text=👤"}
-                      alt={user.full_name}
-                      className="w-20 h-20 rounded-full mx-auto object-cover mb-3"
-                    />
-                    <h5 className="font-semibold">{user.full_name}</h5>
-                    <p className="text-gray-500 text-sm">{user.headline}</p>
-                    <p className="text-sm text-orange-500 mt-1 flex justify-center items-center gap-1">
-                      <MapPin size={16} /> {user.city}
-                    </p>
-                    <button
-                      onClick={() => navigate(`/profile/${user.uuid}`)}
-                      className="inline-block mt-3 bg-orange-400 hover:bg-orange-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition"
+                {providers.map((p) => {
+                  const ratingAvg = Number(p.rating_avg || 0);
+                  const ratingCount = Number(p.rating_count || 0);
+                  const waNumber = (p.phone || "").replace(/\D/g, ""); // ⬅️ requiere que backend envíe phone
+                  const canWhatsApp = Boolean(user) && Boolean(waNumber);
+                  const waText = encodeURIComponent(`Hola ${p.full_name || ""}, te contacto desde Bizu.`);
+                  const waLink = `https://wa.me/${waNumber}?text=${waText}`;
+
+                  return (
+                    <div
+                      key={p.uuid}
+                      className="bg-white rounded-xl shadow-md p-5 hover:shadow-lg transition"
                     >
-                      Ver perfil
-                    </button>
-                  </div>
-                ))}
+                      <div className="text-center">
+                        <img
+                          src={p.photo || "https://placehold.co/100x100?text=👤"}
+                          alt={p.full_name}
+                          className="w-20 h-20 rounded-full mx-auto object-cover mb-3"
+                        />
+                        <h5 className="font-semibold">{p.full_name}</h5>
+
+                        {/* Headline */}
+                        {p.headline && (
+                          <p className="text-gray-500 text-sm">{p.headline}</p>
+                        )}
+
+                        {/* Categoría */}
+                        {p.category && (
+                          <div className="mt-2 inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-orange-50 text-orange-700 border border-orange-200">
+                            {p.category}
+                          </div>
+                        )}
+
+                        {/* Rating */}
+                        <div className="mt-2 flex items-center justify-center gap-2">
+                          <StarReadOnly value={ratingAvg} />
+                          {ratingCount > 0 && (
+                            <span className="text-xs text-gray-500">({ratingCount})</span>
+                          )}
+                        </div>
+
+                        {/* Ciudad */}
+                        <p className="text-sm text-orange-500 mt-2 flex justify-center items-center gap-1">
+                          <MapPin size={16} /> {p.city}
+                        </p>
+
+                        {/* Nota de precios */}
+                        {p.pricing_note && (
+                          <p className="mt-2 text-sm text-[#28364e] font-medium">
+                            {p.pricing_note}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Acciones */}
+                      <div className="mt-4 flex items-center justify-center gap-2">
+                        <button
+                          onClick={() => navigate(`/profile/${p.uuid}`)}
+                          className="inline-flex items-center justify-center bg-orange-400 hover:bg-orange-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition"
+                        >
+                          Ver perfil
+                        </button>
+
+                        {canWhatsApp && (
+                          <a
+                            href={waLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center justify-center gap-2 bg-[#25D366] hover:brightness-95 text-white text-sm font-medium px-4 py-2 rounded-lg transition"
+                            title="Contactar por WhatsApp"
+                          >
+                            <MessageCircle className="w-4 h-4" />
+                            WhatsApp
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
 
               {/* PAGINACIÓN */}
@@ -222,7 +294,7 @@ const Search = () => {
                         acc.push(pageNum);
                         return acc;
                       }, [])
-                      .map((page, idx) =>
+                      .map((page) =>
                         typeof page === "string" && page.startsWith("dots") ? (
                           <span key={page} className="px-2 text-gray-400">
                             ...

@@ -14,6 +14,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import ChangePassword from "./pages/ChangePassword";
 import AccountsList from './pages/AccountsList';
+import Terms from "./pages/Terms";
 
 
 
@@ -36,6 +37,7 @@ function App() {
             <Route path="/reset-password/:uid/:token" element={<ResetPassword />} />
             <Route path="/change-password" element={<ChangePassword />} />
             <Route path="/accounts-list" element={<AccountsList />} />
+            <Route path="/terms" element={<Terms />} />
           </Routes>
         </main>
         <Footer />

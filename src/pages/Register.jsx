@@ -31,13 +31,17 @@ export default function Register() {
     headline: "",
     services: [""],
     schedule: "",
+    pricing_note: "",
     photo: null,
   });
 
+  // Aceptación de Términos
+  const [agreeTerms, setAgreeTerms] = useState(false);
+
   // Previews y manejo de fotos
-  const [preview, setPreview] = useState(null);       // foto de perfil
-  const [workPhotos, setWorkPhotos] = useState([]);   // File[]
-  const [workPreviews, setWorkPreviews] = useState([]); // string[]
+  const [preview, setPreview] = useState(null);          // foto de perfil
+  const [workPhotos, setWorkPhotos] = useState([]);      // File[]
+  const [workPreviews, setWorkPreviews] = useState([]);  // string[]
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [inlineError, setInlineError] = useState("");   // banner fijo dentro del card
@@ -137,6 +141,10 @@ export default function Register() {
     if (!form.city) errs.city = "Selecciona una ciudad.";
     if (!form.bio.trim()) errs.bio = "Escribe una breve descripción.";
 
+    if (form.pricing_note && form.pricing_note.length > 250) {
+      errs.pricing_note = "Máximo 250 caracteres.";
+    }
+
     if (form.role === "provider") {
       if (!form.category) errs.category = "Selecciona una categoría.";
       if (!form.headline.trim()) errs.headline = "Ingresa una frase corta.";
@@ -144,6 +152,11 @@ export default function Register() {
       form.services.forEach((s, i) => {
         if (!(s || "").trim()) errs[`services_${i}`] = "Completa el servicio o elimínalo.";
       });
+    }
+
+    // Requerir aceptación de Términos
+    if (!agreeTerms) {
+      errs.agreeTerms = "Debes aceptar los Términos y Condiciones para continuar.";
     }
 
     setFieldErrors(errs);
@@ -178,6 +191,9 @@ export default function Register() {
       payload.append("category", form.category);
       payload.append("headline", form.headline);
       payload.append("schedule", form.schedule);
+      if (form.pricing_note) {
+        payload.append("pricing_note", form.pricing_note);
+      }
       form.services.forEach((s) => payload.append("services", (s || "").trim()));
       workPhotos.slice(0, 6).forEach((file) => payload.append("work_photos", file));
     }
@@ -190,7 +206,6 @@ export default function Register() {
       toastSuccess("Registro exitoso. Serás redirigido al login.");
       setTimeout(() => navigate("/login"), 1400);
     } catch (err) {
-      // Intenta mapear errores por campo si el backend los envía como dict {campo: [errores]}
       const data = err?.response?.data;
       let msg = getErrorMessage(err, "Error en el registro");
 
@@ -200,8 +215,6 @@ export default function Register() {
           const text = Array.isArray(v) ? v.join(", ") : String(v);
           perField[k] = text;
         }
-        // Mapear servicios (si backend usa 'services' como lista con índice)
-        // Aquí mostramos el mensaje general y, si hay campos concretos, también los marcamos.
         if (Object.keys(perField).length) {
           setFieldErrors((fe) => ({ ...fe, ...perField }));
         }
@@ -321,7 +334,11 @@ export default function Register() {
           {/* Foto de perfil */}
           <div>
             <label className="block text-sm font-medium mb-1">Foto de perfil</label>
-            <label className={`flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-lg cursor-pointer hover:bg-orange-50 transition ${fieldErrors.photo ? "border-red-300" : "border-[#f4a261]"}`}>
+            <label
+              className={`flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-lg cursor-pointer hover:bg-orange-50 transition ${
+                fieldErrors.photo ? "border-red-300" : "border-[#f4a261]"
+              }`}
+            >
               {preview ? (
                 <img src={preview} alt="Preview" className="h-full object-cover rounded" />
               ) : (
@@ -330,13 +347,7 @@ export default function Register() {
                   <span className="text-sm mt-1">Haz clic para subir una imagen</span>
                 </div>
               )}
-              <input
-                type="file"
-                name="photo"
-                accept="image/*"
-                onChange={handleChange}
-                className="hidden"
-              />
+              <input type="file" name="photo" accept="image/*" onChange={handleChange} className="hidden" />
             </label>
             {fieldErrors.photo && <p className="mt-1 text-xs text-red-600">{fieldErrors.photo}</p>}
           </div>
@@ -440,6 +451,28 @@ export default function Register() {
                 {fieldErrors.headline && <p className="mt-1 text-xs text-red-600">{fieldErrors.headline}</p>}
               </div>
 
+              {/* Rango/nota de precios (opcional) */}
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Rango/nota de precios <span className="text-gray-400">(opcional)</span>
+                </label>
+                <input
+                  type="text"
+                  name="pricing_note"
+                  value={form.pricing_note}
+                  onChange={handleChange}
+                  maxLength={120}
+                  placeholder="Ej: Cortes desde 20.000"
+                  className={`w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 ${
+                    fieldErrors.pricing_note ? "border-red-300 focus:ring-red-300" : "border-gray-300 focus:ring-[#f4a261]"
+                  }`}
+                />
+                <p className="mt-1 text-xs text-gray-500">Máximo 120 caracteres.</p>
+                {fieldErrors.pricing_note && (
+                  <p className="mt-1 text-xs text-red-600">{fieldErrors.pricing_note}</p>
+                )}
+              </div>
+
               <div>
                 <label className="block text-sm font-medium mb-1">Servicios *</label>
                 {form.services.map((service, index) => (
@@ -470,7 +503,9 @@ export default function Register() {
                 {Object.keys(fieldErrors)
                   .filter((k) => k.startsWith("services_"))
                   .map((k) => (
-                    <p key={k} className="mt-1 text-xs text-red-600">{fieldErrors[k]}</p>
+                    <p key={k} className="mt-1 text-xs text-red-600">
+                      {fieldErrors[k]}
+                    </p>
                   ))}
                 <button
                   type="button"
@@ -543,10 +578,37 @@ export default function Register() {
             </>
           )}
 
+          {/* Checkbox de Términos */}
+          <div className="pt-2">
+            <label className="inline-flex items-start gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={agreeTerms}
+                onChange={(e) => {
+                  setAgreeTerms(e.target.checked);
+                  if (fieldErrors.agreeTerms) {
+                    clearFieldError("agreeTerms");
+                    if (inlineError) setInlineError("");
+                  }
+                }}
+                className="mt-1 h-4 w-4 rounded border-gray-300 text-[#f4a261] focus:ring-[#f4a261]"
+              />
+              <span className="text-sm text-gray-700">
+                Acepto los{" "}
+                <Link to="/terms" target="_blank" className="text-[#f4a261] underline">
+                  Términos y Condiciones
+                </Link>
+              </span>
+            </label>
+            {fieldErrors.agreeTerms && (
+              <p className="mt-1 text-xs text-red-600">{fieldErrors.agreeTerms}</p>
+            )}
+          </div>
+
           {/* Botón */}
           <button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting /* || !agreeTerms */}
             className={`w-full text-white font-semibold py-2 rounded transition-colors ${
               isSubmitting ? "bg-gray-400 cursor-not-allowed" : "bg-[#f4a261] hover:bg-[#e07b19]"
             }`}

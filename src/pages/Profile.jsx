@@ -151,6 +151,7 @@ export default function PublicProfile() {
   const schedule = provider_profile?.schedule || "";
   const workImages = provider_profile?.work_images || [];
   const category = provider_profile?.category || null;
+  const pricingNote = provider_profile?.pricing_note || "";
   const canEditPhoto = isAdmin || myUuid === uuid;
   const isOwnProfile = myUuid === uuid;
 
@@ -367,6 +368,14 @@ export default function PublicProfile() {
               </>
             )}
 
+            {/* Rango de precios */}
+              {pricingNote && (
+                <>
+                  <h5 className="text-lg font-semibold mt-6">Precios</h5>
+                  <p className="mt-1 text-[#28364e] font-medium">{pricingNote}</p>
+                </>
+            )}
+
             {schedule && (
               <>
                 <h5 className="text-lg font-semibold mt-6">Horario</h5>
@@ -378,6 +387,7 @@ export default function PublicProfile() {
             <p className="flex items-center gap-2 mt-1">
               <MapPin className="w-5 h-5 text-[#28364e]" /> {city || "No especificado"}
             </p>
+
 
             {/* Galería */}
             {workImages.length > 0 && (
