@@ -15,7 +15,11 @@ import ResetPassword from "./pages/ResetPassword";
 import ChangePassword from "./pages/ChangePassword";
 import AccountsList from './pages/AccountsList';
 import Terms from "./pages/Terms";
-
+import AccountEdit from "./pages/AccountEdit";
+import AdminEditAccount from "./pages/AdminEditAccount";
+import ContactPQR from "./pages/ContactPQR";
+import AdminPQR from "./pages/AdminPQR";
+import AdminContactMessages from "./pages/AdminContactMessages";
 
 
 
@@ -38,6 +42,11 @@ function App() {
             <Route path="/change-password" element={<ChangePassword />} />
             <Route path="/accounts-list" element={<AccountsList />} />
             <Route path="/terms" element={<Terms />} />
+            <Route path="/account/edit" element={<AccountEdit />} />
+            <Route path="/admin/edit-account/:uuid" element={<AdminEditAccount />} />
+            <Route path="/contacto" element={<ContactPQR />} />
+            <Route path="/admin/pqr" element={<AdminPQR />} />
+            <Route path="/admin/contact-messages" element={<AdminContactMessages />} />
           </Routes>
         </main>
         <Footer />

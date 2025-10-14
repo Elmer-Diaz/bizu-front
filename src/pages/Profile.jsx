@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext, useCallback } from "react";
-import { useParams, useLocation } from "react-router-dom";
+import { useParams, useLocation, useNavigate } from "react-router-dom";
 import {
   MapPin,
   User,
@@ -23,6 +23,7 @@ import { getErrorMessage } from "../utils/errors";
 export default function PublicProfile() {
   const { uuid } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, setUser } = useContext(AuthContext);
   const { success: toastSuccess, error: toastError } = useToast(); // ⬅️ toasts
 
@@ -331,7 +332,7 @@ export default function PublicProfile() {
               </div>
             )}
 
-            {(isAdmin || myUuid === uuid) && (
+            {/* {(isAdmin || myUuid === uuid) && (
               <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2">
                 <label
                   htmlFor="photoUpload"
@@ -349,7 +350,7 @@ export default function PublicProfile() {
                   disabled={uploadingPhoto}
                 />
               </div>
-            )}
+            )} */}
           </div>
 
           {/* INFO */}
@@ -369,11 +370,11 @@ export default function PublicProfile() {
             )}
 
             {/* Rango de precios */}
-              {pricingNote && (
-                <>
-                  <h5 className="text-lg font-semibold mt-6">Precios</h5>
-                  <p className="mt-1 text-[#28364e] font-medium">{pricingNote}</p>
-                </>
+            {pricingNote && (
+              <>
+                <h5 className="text-lg font-semibold mt-6">Precios</h5>
+                <p className="mt-1 text-[#28364e] font-medium">{pricingNote}</p>
+              </>
             )}
 
             {schedule && (
@@ -419,11 +420,19 @@ export default function PublicProfile() {
                 <button
                   onClick={toggleAccountStatus}
                   disabled={loadingAction}
-                  className={`px-6 py-3 rounded-lg text-lg font-medium transition ${
-                    is_active ? "bg-red-500 hover:bg-red-600 text-white" : "bg-green-500 hover:bg-green-600 text-white"
-                  }`}
+                  className={`px-6 py-3 rounded-lg text-lg font-medium transition ${is_active ? "bg-red-500 hover:bg-red-600 text-white" : "bg-green-500 hover:bg-green-600 text-white"
+                    }`}
                 >
                   {loadingAction ? "Procesando..." : is_active ? "Desactivar cuenta" : "Activar cuenta"}
+                </button>
+
+                <button
+                  onClick={() => navigate(`/admin/edit-account/${uuid}`)}
+                  className="px-6 py-3 rounded-lg text-lg font-medium bg-[#28364e] hover:opacity-90 text-white transition"
+                  aria-label="Editar cuenta como administrador"
+                  title="Editar cuenta (admin)"
+                >
+                  Editar cuenta (admin)
                 </button>
               </div>
             )}
@@ -498,8 +507,8 @@ export default function PublicProfile() {
                       {submittingReview
                         ? "Enviando..."
                         : editingReviewUuid
-                        ? "Guardar cambios"
-                        : "Publicar reseña"}
+                          ? "Guardar cambios"
+                          : "Publicar reseña"}
                     </button>
 
                     {editingReviewUuid && (

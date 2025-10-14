@@ -1,4 +1,30 @@
-import { Wrench, Laptop, Paintbrush, Users, UserPlus, Briefcase, MessageSquare } from 'lucide-react';
+// src/pages/Home.jsx
+import { Link } from "react-router-dom";
+import {
+  Hammer,
+  Scissors,
+  Truck,
+  Wrench,
+  Cpu,
+  Layers,
+  UserPlus,
+  Briefcase,
+  MessageSquare,
+} from "lucide-react";
+import { categories } from "../constants/categories";
+
+function iconForCategory(label) {
+  // Normalizamos para mapear sin tildes/caso
+  const key = label.toLowerCase();
+
+  if (key.includes("construcción") || key.includes("obra")) return Hammer;
+  if (key.includes("belleza") || key.includes("cuidado")) return Scissors;
+  if (key.includes("domicilios") || key.includes("transporte")) return Truck;
+  if (key.includes("reparaciones") || key.includes("hogar")) return Wrench;
+  if (key.includes("tecnología") || key.includes("soporte")) return Cpu;
+  // fallback para "Servicios varios" o cualquier otro
+  return Layers;
+}
 
 export default function Home() {
   return (
@@ -12,43 +38,50 @@ export default function Home() {
           Publica tus servicios o encuentra quien te ayude en minutos.
         </p>
         <div className="flex flex-col sm:flex-row justify-center gap-4">
-          {/* Botón para registrarse como servidor */}
+          {/* Registrarse como servidor */}
           <a
             href="/register?role=provider"
             className="bg-[#f4a261] hover:bg-[#e07b19] text-white py-3 px-6 rounded text-lg font-semibold"
           >
             Registrarse como Servidor
           </a>
-          {/* Botón para registrarse como cliente */}
+          {/* Registrarse como cliente */}
           <a
             href="/register?role=client"
             className="border border-white py-3 px-6 rounded text-lg font-semibold hover:bg-white hover:text-[#28364e] transition"
           >
             Registrarse como Cliente
           </a>
+          {/* 🔎 Botón para ir directo a buscar */}
+          <Link
+            to="/search"
+            className="bg-white/10 hover:bg-white/20 border border-white/30 py-3 px-6 rounded text-lg font-semibold backdrop-blur-sm"
+          >
+            Buscar ahora
+          </Link>
         </div>
       </section>
 
       {/* CATEGORÍAS */}
       <section className="py-20 text-center px-4 bg-white">
         <h2 className="text-3xl md:text-4xl font-bold mb-12">Explora por categoría</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-10 max-w-5xl mx-auto">
-          <div className="flex flex-col items-center">
-            <Wrench className="w-14 h-14 text-blue-600" />
-            <p className="mt-3 text-lg">Plomería</p>
-          </div>
-          <div className="flex flex-col items-center">
-            <Laptop className="w-14 h-14 text-blue-600" />
-            <p className="mt-3 text-lg">Tecnología</p>
-          </div>
-          <div className="flex flex-col items-center">
-            <Paintbrush className="w-14 h-14 text-blue-600" />
-            <p className="mt-3 text-lg">Diseño</p>
-          </div>
-          <div className="flex flex-col items-center">
-            <Users className="w-14 h-14 text-blue-600" />
-            <p className="mt-3 text-lg">Clases</p>
-          </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-6 max-w-6xl mx-auto">
+          {categories.map((cat) => {
+            const Icon = iconForCategory(cat.label);
+            return (
+              <Link
+                key={cat.value}
+                to={`/search`}
+                className="group rounded-xl border hover:shadow-md transition bg-white p-5 flex flex-col items-center"
+              >
+                <div className="rounded-full p-4 bg-gray-50 group-hover:bg-gray-100 transition">
+                  <Icon className="w-8 h-8 text-[#28364e]" />
+                </div>
+                <p className="mt-3 text-sm font-semibold">{cat.label}</p>
+              </Link>
+            );
+          })}
         </div>
       </section>
 
@@ -118,6 +151,12 @@ export default function Home() {
           >
             Soy Cliente
           </a>
+          <Link
+            to="/search"
+            className="bg-white/10 hover:bg-white/20 border border-white/30 py-3 px-6 rounded text-lg font-semibold backdrop-blur-sm"
+          >
+            Buscar ahora
+          </Link>
         </div>
       </section>
     </div>
