@@ -15,8 +15,6 @@ import {
 } from "lucide-react";
 import api from "../api";
 import { AuthContext } from "../context/AuthContext";
-
-// ⬇️ NUEVO: toasts y util de errores
 import { useToast } from "../components/ToastProvider";
 import { getErrorMessage } from "../utils/errors";
 
@@ -25,7 +23,7 @@ export default function PublicProfile() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, setUser } = useContext(AuthContext);
-  const { success: toastSuccess, error: toastError } = useToast(); // ⬅️ toasts
+  const { success: toastSuccess, error: toastError } = useToast();
 
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
@@ -33,7 +31,7 @@ export default function PublicProfile() {
   const [loadingAction, setLoadingAction] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
-  // Lightbox
+  // Lightbox trabajos (galería del proveedor)
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
@@ -47,6 +45,15 @@ export default function PublicProfile() {
   const [reviewRating, setReviewRating] = useState(0);
   const [submittingReview, setSubmittingReview] = useState(false);
   const [editingReviewUuid, setEditingReviewUuid] = useState(null);
+
+  // Imagen de review
+  const [reviewImage, setReviewImage] = useState(null);              // File a subir
+  const [reviewImagePreview, setReviewImagePreview] = useState(null); // URL (local o remota)
+  const [removeReviewImage, setRemoveReviewImage] = useState(false);  // para PATCH
+
+  // Modal imagen de reseña (ampliada)
+  const [reviewLightboxOpen, setReviewLightboxOpen] = useState(false);
+  const [reviewLightboxUrl, setReviewLightboxUrl] = useState(null);
 
   const storedRole = localStorage.getItem("role");
   const myUuid = localStorage.getItem("uuid");
@@ -87,7 +94,7 @@ export default function PublicProfile() {
     }
   };
 
-  // Cambiar foto
+  // Cambiar foto de perfil
   const handlePhotoChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -95,9 +102,7 @@ export default function PublicProfile() {
     formData.append("photo", file);
     try {
       setUploadingPhoto(true);
-      const { data: updated } = await api.patch(`/update-profile-photo/${uuid}/`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      const { data: updated } = await api.patch(`/update-profile-photo/${uuid}/`, formData);
       setData((prev) => ({ ...prev, profile: { ...prev.profile, photo: updated.profile.photo } }));
       if (myUuid === uuid) {
         setUser((prev) => ({ ...prev, profile: { ...prev.profile, photo: updated.profile.photo } }));
@@ -110,7 +115,7 @@ export default function PublicProfile() {
     }
   };
 
-  // Lightbox
+  // Lightbox trabajos
   const openLightbox = (idx) => {
     setLightboxIndex(idx);
     setIsLightboxOpen(true);
@@ -163,11 +168,11 @@ export default function PublicProfile() {
   const showWhatsappButton = Boolean(user) && Boolean(waNumber) && !isOwnProfile;
   const loginUrl = `/login?next=${encodeURIComponent(location.pathname + location.search)}`;
 
-  // ======== Reviews SOLO si es proveedor ========
+  // Reviews solo si es proveedor
   const providerUuid = provider_profile?.uuid || null;
   const canReview = Boolean(user) && user?.role === "client" && Boolean(providerUuid);
 
-  // Cargar reviews si hay providerUuid
+  // Cargar reviews
   const loadReviews = useCallback(
     async (page = 1) => {
       if (!providerUuid) return;
@@ -178,15 +183,16 @@ export default function PublicProfile() {
         setReviews(list);
         setReviewsCount(res.count || list.length);
 
-        // Detectar mi reseña
         const mine = list.find((r) => r.author?.uuid === myUuid) || null;
         setMyReview(mine);
         if (!mine) {
           setReviewText("");
           setReviewRating(0);
+          setReviewImage(null);
+          setReviewImagePreview(null);
+          setRemoveReviewImage(false);
         }
       } catch (e) {
-        console.error("Error cargando reseñas:", e?.response?.data || e.message);
         toastError(getErrorMessage(e, "No se pudieron cargar las reseñas."));
       } finally {
         setReviewsLoading(false);
@@ -200,6 +206,27 @@ export default function PublicProfile() {
     loadReviews(reviewsPage);
   }, [loadReviews, reviewsPage, providerUuid]);
 
+  // Imagen de review (input)
+  const handleReviewImageChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const isImage = /^image\//.test(file.type);
+    const maxMB = 8;
+    if (!isImage) return toastError("El archivo debe ser una imagen.");
+    if (file.size > maxMB * 1024 * 1024) return toastError(`Máx ${maxMB}MB`);
+
+    setReviewImage(file);
+    setRemoveReviewImage(false);
+    const url = URL.createObjectURL(file);
+    setReviewImagePreview(url);
+  };
+
+  const clearReviewImage = () => {
+    setReviewImage(null);
+    setReviewImagePreview(null);
+  };
+
+  // Crear/editar reseña
   const onSubmitReview = async (e) => {
     e.preventDefault();
     if (!providerUuid || !canReview) return;
@@ -207,24 +234,31 @@ export default function PublicProfile() {
       toastError("Selecciona una calificación (1 a 5).");
       return;
     }
+
     try {
       setSubmittingReview(true);
+
+      // Armamos FormData para ambos casos (POST y PATCH)
+      const fd = new FormData();
+      fd.append("rating", String(reviewRating));
+      fd.append("comment", reviewText || "");
+      if (reviewImage) fd.append("image", reviewImage);
+      if (editingReviewUuid && removeReviewImage) fd.append("remove_image", "true");
+
       if (editingReviewUuid) {
-        await api.patch(`/reviews/${editingReviewUuid}/`, {
-          rating: reviewRating,
-          comment: reviewText,
-        });
+        // PATCH siempre multipart
+        await api.patch(`/reviews/${editingReviewUuid}/`, fd);
       } else {
-        await api.post(`/providers/${providerUuid}/reviews/create/`, {
-          rating: reviewRating,
-          comment: reviewText,
-        });
+        // POST siempre multipart
+        await api.post(`/providers/${providerUuid}/reviews/create/`, fd);
       }
+
       setEditingReviewUuid(null);
+      clearReviewImage();
+      setRemoveReviewImage(false);
       await loadReviews(1);
       toastSuccess("¡Reseña guardada!");
     } catch (err) {
-      console.error("Error al publicar reseña:", err?.response?.data || err.message);
       toastError(getErrorMessage(err, "No se pudo enviar la reseña."));
     } finally {
       setSubmittingReview(false);
@@ -236,16 +270,25 @@ export default function PublicProfile() {
     setEditingReviewUuid(myReview.uuid);
     setReviewText(myReview.comment || "");
     setReviewRating(myReview.rating || 0);
+    if (myReview.image) {
+      setReviewImage(null);
+      setReviewImagePreview(myReview.image); // preview remota
+    } else {
+      setReviewImagePreview(null);
+    }
+    setRemoveReviewImage(false);
   };
 
   const onCancelEdit = () => {
     setEditingReviewUuid(null);
     setReviewText("");
     setReviewRating(0);
+    clearReviewImage();
+    setRemoveReviewImage(false);
   };
 
   const onDeleteReview = async (reviewUuid) => {
-    const ok = window.confirm("¿Eliminar esta reseña?"); // opcional: te puedo pasar un modal bonito luego
+    const ok = window.confirm("¿Eliminar esta reseña?");
     if (!ok) return;
     try {
       await api.delete(`/reviews/${reviewUuid}/delete/`);
@@ -254,6 +297,8 @@ export default function PublicProfile() {
         setReviewText("");
         setReviewRating(0);
         setEditingReviewUuid(null);
+        clearReviewImage();
+        setRemoveReviewImage(false);
       }
       await loadReviews(1);
       toastSuccess("Reseña eliminada.");
@@ -307,7 +352,7 @@ export default function PublicProfile() {
       <section className="bg-[#28364e] text-white py-10 text-center">
         <div className="container mx-auto">
           <h2 className="text-3xl font-bold">{full_name}</h2>
-          {headline ? <p className="mt-2">{headline}</p> : <p className="mt-2 capitalize">{role}</p>}
+        {headline ? <p className="mt-2">{headline}</p> : <p className="mt-2 capitalize">{role}</p>}
           {category && (
             <span className="inline-block mt-3 px-3 py-1 text-sm bg-white/10 rounded-full">
               Categoría: <span className="font-semibold">{category}</span>
@@ -332,6 +377,7 @@ export default function PublicProfile() {
               </div>
             )}
 
+            {/* Botón de foto de perfil (opcional) */}
             {/* {(isAdmin || myUuid === uuid) && (
               <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2">
                 <label
@@ -369,7 +415,6 @@ export default function PublicProfile() {
               </>
             )}
 
-            {/* Rango de precios */}
             {pricingNote && (
               <>
                 <h5 className="text-lg font-semibold mt-6">Precios</h5>
@@ -389,8 +434,7 @@ export default function PublicProfile() {
               <MapPin className="w-5 h-5 text-[#28364e]" /> {city || "No especificado"}
             </p>
 
-
-            {/* Galería */}
+            {/* Galería de trabajos */}
             {workImages.length > 0 && (
               <>
                 <h5 className="text-lg font-semibold mt-6">Trabajos</h5>
@@ -416,12 +460,13 @@ export default function PublicProfile() {
 
             {/* Admin: activar/desactivar */}
             {isAdmin && (
-              <div className="text-center mt-6">
+              <div className="text-center mt-6 space-x-3">
                 <button
                   onClick={toggleAccountStatus}
                   disabled={loadingAction}
-                  className={`px-6 py-3 rounded-lg text-lg font-medium transition ${is_active ? "bg-red-500 hover:bg-red-600 text-white" : "bg-green-500 hover:bg-green-600 text-white"
-                    }`}
+                  className={`px-6 py-3 rounded-lg text-lg font-medium transition ${
+                    is_active ? "bg-red-500 hover:bg-red-600 text-white" : "bg-green-500 hover:bg-green-600 text-white"
+                  }`}
                 >
                   {loadingAction ? "Procesando..." : is_active ? "Desactivar cuenta" : "Activar cuenta"}
                 </button>
@@ -437,7 +482,7 @@ export default function PublicProfile() {
               </div>
             )}
 
-            {/* Contacto (oculto si es su propio perfil) */}
+            {/* Contacto */}
             {showWhatsappButton ? (
               <div className="text-center mt-6">
                 <a
@@ -469,7 +514,7 @@ export default function PublicProfile() {
             )}
           </div>
 
-          {/* ===================== REVIEWS (solo si providerUuid) ===================== */}
+          {/* ===================== REVIEWS ===================== */}
           {providerUuid && (
             <div className="bg-white rounded-xl shadow-md p-6 mt-10">
               <div className="flex items-center justify-between">
@@ -481,7 +526,7 @@ export default function PublicProfile() {
                 )}
               </div>
 
-              {/* Formulario SOLO si: puede reseñar y (no tiene reseña) o está editando */}
+              {/* Formulario: crear o editar */}
               {canReview && (editingReviewUuid || !myReview) && (
                 <form onSubmit={onSubmitReview} className="mt-4 space-y-3">
                   <div className="flex items-center gap-3">
@@ -491,6 +536,7 @@ export default function PublicProfile() {
                       <span className="text-xs text-blue-600">Editando tu reseña</span>
                     ) : null}
                   </div>
+
                   <textarea
                     value={reviewText}
                     onChange={(e) => setReviewText(e.target.value)}
@@ -498,6 +544,62 @@ export default function PublicProfile() {
                     className="w-full rounded-md border border-gray-300 p-3 focus:outline-none focus:ring-2 focus:ring-[#28364e]"
                     placeholder="Escribe tu opinión (opcional)"
                   />
+
+                  {/* Campo imagen con botón bonito */}
+                  <div className="mt-2">
+                    <label className="block text-sm font-medium">Foto (opcional)</label>
+
+                    <div className="mt-2 flex items-center gap-3">
+                      <label
+                        htmlFor="reviewImageInput"
+                        className="inline-flex items-center gap-2 px-3 py-2 rounded-md border bg-white hover:bg-gray-50 cursor-pointer shadow-sm"
+                      >
+                        <Camera className="w-4 h-4" />
+                        <span>{reviewImagePreview ? "Cambiar foto" : "Subir foto"}</span>
+                      </label>
+
+                      {reviewImagePreview && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (editingReviewUuid && myReview?.image && reviewImagePreview === myReview.image) {
+                              setRemoveReviewImage(true);
+                              setReviewImagePreview(null);
+                            } else {
+                              clearReviewImage();
+                            }
+                          }}
+                          className="px-3 py-2 rounded-md border text-sm"
+                        >
+                          Quitar
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Preview mini */}
+                    {reviewImagePreview && (
+                      <div className="mt-2">
+                        <img
+                          src={reviewImagePreview}
+                          alt="preview"
+                          className="w-24 h-24 object-cover rounded border"
+                        />
+                        {editingReviewUuid && myReview?.image && reviewImagePreview !== myReview.image && removeReviewImage && (
+                          <p className="text-xs text-red-500 mt-1">La imagen será eliminada.</p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Input real oculto */}
+                    <input
+                      id="reviewImageInput"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleReviewImageChange}
+                      className="hidden"
+                    />
+                  </div>
+
                   <div className="flex items-center gap-3">
                     <button
                       type="submit"
@@ -520,7 +622,7 @@ export default function PublicProfile() {
                 </form>
               )}
 
-              {/* Lista de reseñas (mi reseña primero si existe) */}
+              {/* Lista de reseñas (mi reseña primero) */}
               <div className="mt-6 space-y-5">
                 {reviewsLoading && <p className="text-gray-500">Cargando reseñas...</p>}
                 {!reviewsLoading && orderedReviews.length === 0 && <p className="text-gray-500">Aún no hay reseñas.</p>}
@@ -566,6 +668,30 @@ export default function PublicProfile() {
                       </div>
 
                       {r.comment && <p className="mt-2 text-gray-700">{r.comment}</p>}
+
+                      {/* Imagen de la reseña → miniatura clickeable */}
+                      {r.image && (
+                        <div className="mt-3">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setReviewLightboxUrl(r.image);
+                              setReviewLightboxOpen(true);
+                            }}
+                            className="group inline-block rounded overflow-hidden border focus:outline-none focus:ring-2 focus:ring-[#28364e]"
+                            aria-label="Ver imagen de reseña ampliada"
+                            title="Ver imagen"
+                          >
+                            <img
+                              src={r.image}
+                              alt="Imagen de reseña"
+                              className="w-24 h-24 object-cover transition-transform duration-200 group-hover:scale-105"
+                              loading="lazy"
+                            />
+                          </button>
+                        </div>
+                      )}
+
                       {r.created_at && (
                         <p className="mt-1 text-xs text-gray-400">{new Date(r.created_at).toLocaleString()}</p>
                       )}
@@ -590,7 +716,7 @@ export default function PublicProfile() {
         </div>
       </section>
 
-      {/* Lightbox */}
+      {/* Lightbox trabajos */}
       {isLightboxOpen && workImages.length > 0 && (
         <div
           className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center px-4"
@@ -640,6 +766,35 @@ export default function PublicProfile() {
               {workImages[lightboxIndex]?.caption && (
                 <div className="p-3 text-sm text-white/90">{workImages[lightboxIndex].caption}</div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal imagen de reseña */}
+      {reviewLightboxOpen && reviewLightboxUrl && (
+        <div
+          className="fixed inset-0 z-[120] bg-black/80 flex items-center justify-center px-4"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setReviewLightboxOpen(false)}
+        >
+          <div className="relative max-w-3xl w-full" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setReviewLightboxOpen(false)}
+              className="absolute -top-10 right-0 text-white/90 hover:text-white"
+              aria-label="Cerrar"
+              title="Cerrar"
+            >
+              <X className="w-7 h-7" />
+            </button>
+            <div className="rounded-lg overflow-hidden shadow-2xl bg-black">
+              <img
+                src={reviewLightboxUrl}
+                alt="Imagen de reseña"
+                className="w-full max-h-[80vh] object-contain select-none"
+                draggable={false}
+              />
             </div>
           </div>
         </div>
