@@ -1,7 +1,7 @@
 // src/components/Navbar.jsx
 import { useContext, useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Menu, X, ChevronDown, User } from "lucide-react";
+import { Menu, X, ChevronDown, User, MessageCircle } from "lucide-react";
 import { AuthContext } from "../context/AuthContext";
 
 export default function Navbar() {
@@ -50,6 +50,16 @@ export default function Navbar() {
         className="block px-4 py-2 text-sm hover:bg-gray-100 transition-colors"
       >
         Cambiar contraseña
+      </Link>
+
+      {/* Mis chats: cliente y proveedor pueden entrar */}
+      <Link
+        to="/chats"
+        onClick={() => { setDropdownOpen(false); setIsOpen(false); }}
+        className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 transition-colors"
+      >
+        <MessageCircle className="w-4 h-4 text-[#28364e]" />
+        <span>Mis chats</span>
       </Link>
 
       {user?.role === "admin" && (
@@ -215,65 +225,76 @@ export default function Navbar() {
                   </Link>
                 </li>
 
-                {user?.role === "admin" && (
-                  <>
-                    <li className="px-4 pt-2 text-xs uppercase tracking-wide text-white/70">
-                      Admin
-                    </li>
-                    <li>
-                      <Link
-                        to="/accounts-list"
-                        className="block px-4 py-2 hover:bg-[#f4a261]"
-                        onClick={() => setIsOpen(false)}
-                      >
-                        Cuentas
-                      </Link>
-                    </li>
-                    {/* NUEVOS: enlaces admin */}
-                    <li>
-                      <Link
-                        to="/admin/pqr"
-                        className="block px-4 py-2 hover:bg-[#f4a261]"
-                        onClick={() => setIsOpen(false)}
-                      >
-                        PQR
-                      </Link>
-                    </li>
-                    <li>
-                      <Link
-                        to="/admin/contact-messages"
-                        className="block px-4 py-2 hover:bg-[#f4a261]"
-                        onClick={() => setIsOpen(false)}
-                      >
-                        Mensajes de contacto
-                      </Link>
-                    </li>
-                  </>
-                )}
-
+                {/* Mis chats: cliente y proveedor pueden entrar */}
                 <li>
-                  <button
-                    onClick={() => { handleLogout(); setIsOpen(false); }}
-                    className="w-full text-left px-4 py-2 hover:bg-[#f4a261]"
+                  <Link
+                    to="/chats"
+                    className="block px-4 py-2 hover:bg-[#f4a261]"
+                    onClick={() => setIsOpen(false)}
                   >
-                    Cerrar sesión
-                  </button>
+                    Mis chats
+                  </Link>
+                </li>
+
+            {user?.role === "admin" && (
+              <>
+                <li className="px-4 pt-2 text-xs uppercase tracking-wide text-white/70">
+                  Admin
+                </li>
+                <li>
+                  <Link
+                    to="/accounts-list"
+                    className="block px-4 py-2 hover:bg-[#f4a261]"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Cuentas
+                  </Link>
+                </li>
+                {/* NUEVOS: enlaces admin */}
+                <li>
+                  <Link
+                    to="/admin/pqr"
+                    className="block px-4 py-2 hover:bg-[#f4a261]"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    PQR
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/admin/contact-messages"
+                    className="block px-4 py-2 hover:bg-[#f4a261]"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Mensajes de contacto
+                  </Link>
                 </li>
               </>
-            ) : (
-              <li>
-                <Link
-                  to="/login"
-                  className="block px-4 py-2 hover:bg-[#f4a261] hover:text-white"
-                  onClick={() => setIsOpen(false)}
-                >
-                  Iniciar sesión
-                </Link>
-              </li>
             )}
-          </ul>
+
+            <li>
+              <button
+                onClick={() => { handleLogout(); setIsOpen(false); }}
+                className="w-full text-left px-4 py-2 hover:bg-[#f4a261]"
+              >
+                Cerrar sesión
+              </button>
+            </li>
+          </>
+        ) : (
+        <li>
+          <Link
+            to="/login"
+            className="block px-4 py-2 hover:bg-[#f4a261] hover:text-white"
+            onClick={() => setIsOpen(false)}
+          >
+            Iniciar sesión
+          </Link>
+        </li>
+            )}
+      </ul>
         )}
-      </div>
-    </nav>
+    </div>
+    </nav >
   );
 }

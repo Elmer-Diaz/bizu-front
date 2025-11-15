@@ -27,6 +27,8 @@ export function AuthProvider({ children }) {
       // Guardamos role y uuid para que el navbar lo tenga de inmediato
       if (data.role) localStorage.setItem("role", data.role);
       if (data.id) localStorage.setItem("uuid", data.id);
+      //if (data.uuid) localStorage.setItem("uuid", data.uuid);
+
     } catch {
       setUser(null);
     } finally {

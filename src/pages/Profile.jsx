@@ -31,6 +31,9 @@ export default function PublicProfile() {
   const [loadingAction, setLoadingAction] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
+  const [creatingChat, setCreatingChat] = useState(false);
+
+
   // Lightbox trabajos (galería del proveedor)
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
@@ -171,6 +174,36 @@ export default function PublicProfile() {
   // Reviews solo si es proveedor
   const providerUuid = provider_profile?.uuid || null;
   const canReview = Boolean(user) && user?.role === "client" && Boolean(providerUuid);
+
+  // Chat solo si es proveedor y yo soy cliente
+  const canChat = Boolean(user) && user?.role === "client" && Boolean(providerUuid) && !isOwnProfile;
+
+  
+  const handleStartChat = async () => {
+    if (!providerUuid) return;
+
+    // si no está logueado, manda a login con next
+    if (!user) {
+      navigate(`/login?next=${encodeURIComponent(location.pathname + location.search)}`);
+      return;
+    }
+
+    try {
+      setCreatingChat(true);
+      // POST /chat/threads/ con provider_uuid
+      const { data } = await api.post("/chat/threads/", {
+        provider_uuid: providerUuid,
+      });
+
+      // data.uuid = uuid del thread
+      navigate(`/chat/${data.uuid}`);
+    } catch (err) {
+      toastError(getErrorMessage(err, "No se pudo iniciar el chat con este proveedor."));
+    } finally {
+      setCreatingChat(false);
+    }
+  };
+
 
   // Cargar reviews
   const loadReviews = useCallback(
@@ -483,35 +516,68 @@ export default function PublicProfile() {
             )}
 
             {/* Contacto */}
-            {showWhatsappButton ? (
-              <div className="text-center mt-6">
-                <a
-                  href={waLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 bg-[#25D366] hover:brightness-95 text-white px-6 py-3 rounded-lg text-lg font-medium"
+            <div className="text-center mt-6 space-y-3">
+              {/* Botón de chat dentro de la app */}
+              {canChat && (
+                <button
+                  onClick={handleStartChat}
+                  disabled={creatingChat}
+                  className="inline-flex items-center gap-2 bg-[#28364e] hover:opacity-90 text-white px-6 py-3 rounded-lg text-lg font-medium disabled:opacity-60"
                 >
-                  <MessageCircle className="w-5 h-5" />
-                  Contactar por WhatsApp
-                </a>
-              </div>
-            ) : !user ? (
-              <div className="text-center mt-6">
-                <a
-                  href={loginUrl}
-                  className="inline-flex items-center gap-2 bg-[#28364e] hover:opacity-90 text-white px-6 py-3 rounded-lg text-lg font-medium"
-                >
-                  Inicia sesión para contactar
-                </a>
-                <p className="text-sm text-gray-500 mt-2">Necesitas una cuenta para enviar mensajes por WhatsApp.</p>
-              </div>
-            ) : (
-              !isOwnProfile && (
-                <p className="text-center text-sm text-gray-500 mt-4">
+                  {creatingChat ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span>Creando chat...</span>
+                    </>
+                  ) : (
+                    <>
+                      <MessageCircle className="w-5 h-5" />
+                      <span>Chatear en Bizu</span>
+                    </>
+                  )}
+                </button>
+              )}
+
+              {/* Botón WhatsApp (si hay teléfono y user logueado y no es mi perfil) */}
+              {showWhatsappButton && (
+                <div>
+                  <a
+                    href={waLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 bg-[#25D366] hover:brightness-95 text-white px-6 py-3 rounded-lg text-lg font-medium"
+                  >
+                    <MessageCircle className="w-5 h-5" />
+                    Contactar por WhatsApp
+                  </a>
+                </div>
+              )}
+
+              {/* Si no hay teléfono y no soy yo */}
+              {!showWhatsappButton && user && !isOwnProfile && (
+                <p className="text-sm text-gray-500">
                   Este proveedor aún no tiene un teléfono disponible para contacto.
                 </p>
-              )
-            )}
+              )}
+
+              {/* Si no hay user, link a login (como ya tenías) */}
+              {!user && (
+                <div>
+                  <a
+                    href={loginUrl}
+                    className="inline-flex items-center gap-2 bg-[#28364e] hover:opacity-90 text-white px-6 py-3 rounded-lg text-lg font-medium"
+                  >
+                    Inicia sesión para contactar
+                  </a>
+                  <p className="text-sm text-gray-500 mt-2">
+                    Necesitas una cuenta para enviar mensajes y chatear con proveedores.
+                  </p>
+                </div>
+              )}
+            </div>
+
+
+            
           </div>
 
           {/* ===================== REVIEWS ===================== */}
