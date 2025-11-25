@@ -122,6 +122,9 @@ export default function Navbar() {
           {/* Desktop menu */}
           <ul className="hidden md:flex gap-6 items-center text-base">
             <li>
+              <Link to="/" className="hover:text-[#f4a261]">Inicio</Link>
+            </li>
+            <li>
               <Link to="/search" className="hover:text-[#f4a261]">Buscar</Link>
             </li>
             {/* Contáctanos SIEMPRE visible */}

@@ -22,6 +22,7 @@ import AdminPQR from "./pages/AdminPQR";
 import AdminContactMessages from "./pages/AdminContactMessages";
 import ChatThreadPage from "./pages/ChatThreadPage";
 import ChatThreadsList from "./pages/ChatThreadsList";
+import ChatInboxPage from "./pages/ChatInboxPage";
 
 
 
@@ -48,8 +49,10 @@ function App() {
             <Route path="/contacto" element={<ContactPQR />} />
             <Route path="/admin/pqr" element={<AdminPQR />} />
             <Route path="/admin/contact-messages" element={<AdminContactMessages />} />
-            <Route path="/chats" element={<ChatThreadsList />} />
-            <Route path="/chat/:threadUuid" element={<ChatThreadPage />} />
+            <Route path="/chats" element={<ChatInboxPage />} />
+            {/* <Route path="/chats" element={<ChatThreadsList />} />
+            <Route path="/chat/:threadUuid" element={<ChatThreadPage />} /> */}
+
           </Routes>
         </main>
         <Footer />

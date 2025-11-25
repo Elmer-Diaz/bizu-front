@@ -4,5 +4,9 @@ export const categories = [
   { value: 'Domicilios y transporte', label: 'Domicilios y transporte' },
   { value: 'Reparaciones para el hogar', label: 'Reparaciones para el hogar' },
   { value: 'Tecnología/soporte técnico', label: 'Tecnología/soporte técnico' },
+  { value: 'Artesanías', label: 'Artesanías' },
+  { value: 'Arreglos florales', label: 'Arreglos florales' },
+  { value: 'Detalles y regalos', label: 'Detalles y regalos' },
+  { value: 'Decoración', label: 'Decoración' },
   { value: 'Servicios varios', label: 'Servicios varios' },
 ];

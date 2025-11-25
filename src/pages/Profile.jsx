@@ -196,7 +196,7 @@ export default function PublicProfile() {
       });
 
       // data.uuid = uuid del thread
-      navigate(`/chat/${data.uuid}`);
+      navigate(`/chats?thread=${data.uuid}`);
     } catch (err) {
       toastError(getErrorMessage(err, "No se pudo iniciar el chat con este proveedor."));
     } finally {
