@@ -96,7 +96,7 @@ export default function Login() {
         toastError(msg, { duration: 7000 });
         setInlineError(msg);
       }
-      console.error("Error en login:", { status, data: err?.response?.data });
+      //console.error("Error en login:", { status, data: err?.response?.data });
     } finally {
       setSubmitting(false);
     }

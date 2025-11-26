@@ -15,6 +15,8 @@ const AccountsList = () => {
 
   const navigate = useNavigate();
 
+  const { success: toastSuccess, error: toastError } = useToast();
+
   const fetchAccounts = async (page = 1) => {
     setLoading(true);
 
@@ -35,7 +37,8 @@ const AccountsList = () => {
       if (err.response?.status === 403) {
         window.location.href = "/";
       } else {
-        console.error("Error al cargar cuentas", err);
+        //console.error("Error al cargar cuentas", err);
+        toastError(getErrorMessage(err, "Error al cargar cuentas."));
       }
     } finally {
       setLoading(false);

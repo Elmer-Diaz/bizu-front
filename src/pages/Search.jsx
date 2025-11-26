@@ -60,7 +60,7 @@ const Search = () => {
       setProviders([]);
       setInlineError(msg);
       toastError(msg, { duration: 7000 });
-      console.error("Error al cargar proveedores", err);
+      //console.error("Error al cargar proveedores", err);
     } finally {
       setLoading(false);
     }

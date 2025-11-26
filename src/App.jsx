@@ -50,8 +50,8 @@ function App() {
             <Route path="/admin/pqr" element={<AdminPQR />} />
             <Route path="/admin/contact-messages" element={<AdminContactMessages />} />
             <Route path="/chats" element={<ChatInboxPage />} />
-            {/* <Route path="/chats" element={<ChatThreadsList />} />
-            <Route path="/chat/:threadUuid" element={<ChatThreadPage />} /> */}
+            {/* <Route path="/chats" element={<ChatThreadsList />} /> */}
+            <Route path="/chat/:threadUuid" element={<ChatThreadPage />} />
 
           </Routes>
         </main>

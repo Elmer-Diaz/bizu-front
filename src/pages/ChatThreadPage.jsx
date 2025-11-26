@@ -1,3 +1,4 @@
+// src/pages/ChatThreadPage.jsx
 import React, { useEffect, useState, useRef, useContext } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Send } from "lucide-react";
@@ -165,9 +166,13 @@ export default function ChatThreadPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-100">
+    // 👈 CAMBIO 1: usar h-[100dvh] para que la vista ocupe todo el alto del viewport
+    <div className="h-[100dvh] flex flex-col bg-gray-100">
       {/* Header */}
-      <div className="bg-[#28364e] text-white px-4 py-3 flex items-center gap-3">
+      <div
+        // 👈 CAMBIO 2: sticky top-0 z-10 para que el header quede fijo arriba
+        className="bg-[#28364e] text-white px-4 py-3 flex items-center gap-3 sticky top-0 z-10"
+      >
         <button
           onClick={() => navigate(-1)}
           className="p-1 rounded-full hover:bg-white/10"

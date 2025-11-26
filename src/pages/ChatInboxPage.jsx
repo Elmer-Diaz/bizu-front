@@ -39,6 +39,19 @@ export default function ChatInboxPage() {
   // último visto por thread: { [threadUuid]: ISOString }
   const [threadLastSeen, setThreadLastSeen] = useState({});
 
+  // 🔹 detectar si es móvil (viewport < 768px)
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== "undefined" ? window.innerWidth < 768 : false
+  );
+
+  useEffect(() => {
+    const onResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
   // Si no está logueado, redirige a login
   useEffect(() => {
     if (!user) {
@@ -60,23 +73,23 @@ export default function ChatInboxPage() {
       setNextUrl(data.next || null);
       setPrevUrl(data.previous || null);
 
-      // Seleccionar thread:
-      // 1) Si viene ?thread=<uuid> en la URL, intentamos ese
-      // 2) Si no hay seleccionado aún, usamos el primero
-      setSelectedThread((prev) => {
-        if (prev && !initialThreadParam) return prev;
+      // En desktop sí seleccionamos thread por defecto
+      if (!isMobile) {
+        setSelectedThread((prev) => {
+          if (prev && !initialThreadParam) return prev;
 
-        if (initialThreadParam) {
-          const found = list.find((t) => t.uuid === initialThreadParam);
-          if (found) return found;
-        }
+          if (initialThreadParam) {
+            const found = list.find((t) => t.uuid === initialThreadParam);
+            if (found) return found;
+          }
 
-        if (!prev && list.length > 0) {
-          return list[0];
-        }
+          if (!prev && list.length > 0) {
+            return list[0];
+          }
 
-        return prev;
-      });
+          return prev;
+        });
+      }
     } catch (err) {
       toastError(getErrorMessage(err, "No se pudieron cargar tus chats."));
     } finally {
@@ -103,7 +116,7 @@ export default function ChatInboxPage() {
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [user, isMobile]);
 
   const scrollToBottom = () => {
     if (bottomRef.current) {
@@ -120,7 +133,7 @@ export default function ChatInboxPage() {
         `/chat/threads/${selectedThread.uuid}/messages/`
       );
 
-      // data ahora es un array completo ya ordenado
+      // data ahora es un array completo ya ordenado desde el backend
       setMessages(data);
 
       if (scroll) scrollToBottom();
@@ -132,9 +145,9 @@ export default function ChatInboxPage() {
     }
   };
 
-  // Cargar mensajes y hacer polling cada vez que cambia el thread seleccionado
+  // Cargar mensajes y hacer polling cada vez que cambia el thread seleccionado (solo desktop)
   useEffect(() => {
-    if (!selectedThread) return;
+    if (!selectedThread || isMobile) return;
 
     fetchMessages({ scroll: true });
 
@@ -151,15 +164,15 @@ export default function ChatInboxPage() {
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedThread?.uuid]);
+  }, [selectedThread?.uuid, isMobile]);
 
   useEffect(() => {
     scrollToBottom();
   }, [messages.length]);
 
-  // Marcar como leído cuando ya tenemos mensajes del thread abierto
+  // Marcar como leído cuando ya tenemos mensajes del thread abierto (desktop)
   useEffect(() => {
-    if (!selectedThread || messages.length === 0) return;
+    if (!selectedThread || messages.length === 0 || isMobile) return;
 
     const last = messages[messages.length - 1];
     const lastTime = last.created_at || new Date().toISOString();
@@ -168,7 +181,7 @@ export default function ChatInboxPage() {
       ...prev,
       [selectedThread.uuid]: lastTime,
     }));
-  }, [messages.length, selectedThread?.uuid]);
+  }, [messages.length, selectedThread?.uuid, isMobile]);
 
   // Imagen del mensaje
   const handleMessageImageChange = (e) => {
@@ -210,7 +223,6 @@ export default function ChatInboxPage() {
         fd.append("image", messageImage);
       }
 
-      // IMPORTANTE: usamos la respuesta del POST
       const { data: newMessage } = await api.post(
         `/chat/threads/${selectedThread.uuid}/messages/`,
         fd
@@ -219,16 +231,13 @@ export default function ChatInboxPage() {
       setText("");
       clearMessageImage();
 
-      // si la API devuelve el mensaje creado, lo agregamos al estado local
       if (newMessage && newMessage.uuid) {
         setMessages((prev) => [...prev, newMessage]);
         scrollToBottom();
       } else {
-        // fallback: recargar mensajes si no vino el objeto
         await fetchMessages({ scroll: true });
       }
 
-      // refrescamos la lista de threads para actualizar último mensaje/hora
       fetchThreads();
     } catch (err) {
       console.error("Error enviando mensaje:", err);
@@ -239,6 +248,13 @@ export default function ChatInboxPage() {
   };
 
   const handleSelectThread = (thread) => {
+    // 🔹 En móvil: navegar a la vista de chat individual
+    if (isMobile) {
+      navigate(`/chat/${thread.uuid}`);
+      return;
+    }
+
+    // 🔹 En desktop: seleccionar y mostrar en el pane derecho
     setSelectedThread(thread);
 
     const lastTime =
@@ -294,7 +310,7 @@ export default function ChatInboxPage() {
     <div className="min-h-screen bg-gray-100">
       <div className="max-w-6xl mx-auto px-2 md:px-4 py-4">
         <div className="bg-white rounded-2xl shadow-xl flex flex-col md:flex-row h-[calc(100vh-5rem)] overflow-hidden">
-          {/* PANE IZQUIERDO: lista de chats */}
+          {/* PANE IZQUIERDO: lista de chats (full screen en móvil) */}
           <div className="w-full md:w-80 lg:w-96 border-b md:border-b-0 md:border-r border-gray-200 flex flex-col">
             {/* Header lista */}
             <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
@@ -375,7 +391,7 @@ export default function ChatInboxPage() {
                         key={t.uuid}
                         onClick={() => handleSelectThread(t)}
                         className={`w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition border-l-4 ${
-                          isActive
+                          isActive && !isMobile
                             ? "bg-gray-50 border-l-[#28364e]"
                             : "border-l-transparent"
                         }`}
@@ -438,9 +454,8 @@ export default function ChatInboxPage() {
             )}
           </div>
 
-          {/* PANE DERECHO: mensajes del chat */}
-          <div className="flex-1 flex flex-col bg-gray-50">
-            {/* Si no hay chat seleccionado */}
+          {/* PANE DERECHO: mensajes del chat (solo desktop) */}
+          <div className="flex-1 flex flex-col bg-gray-50 hidden md:flex">
             {!selectedThread && (
               <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
                 <MessageCircle className="w-10 h-10 mb-3" />
