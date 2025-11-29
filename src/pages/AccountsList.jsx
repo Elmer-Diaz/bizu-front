@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { MapPin, ChevronDown, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import api from "../api"; // ⬅️ nuestro Axios configurado
+import { useToast } from "../components/ToastProvider";
 
 const AccountsList = () => {
   const [accounts, setAccounts] = useState([]);
@@ -12,6 +13,7 @@ const AccountsList = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const pageSize = 9;
+  
 
   const navigate = useNavigate();
 
