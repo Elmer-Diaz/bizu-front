@@ -7,9 +7,14 @@ import {
   Wrench,
   Cpu,
   Layers,
+  Palette,
   UserPlus,
   Briefcase,
   MessageSquare,
+  Flower2,
+  Gift,
+  Sparkles,
+  UtensilsCrossed,
 } from "lucide-react";
 import { categories } from "../constants/categories";
 
@@ -22,6 +27,16 @@ function iconForCategory(label) {
   if (key.includes("domicilios") || key.includes("transporte")) return Truck;
   if (key.includes("reparaciones") || key.includes("hogar")) return Wrench;
   if (key.includes("tecnología") || key.includes("soporte")) return Cpu;
+
+  if (key.includes("artesanías")) return Palette;
+  if (key.includes("arreglos") || key.includes("florales")) return Flower2;
+  if (key.includes("detalles") || key.includes("regalos")) return Gift;
+  if (key.includes("decoración")) return Sparkles;
+  if (key.includes("comidas")) return UtensilsCrossed;
+
+  if (key.includes("servicios") || key.includes("varios")) return Layers;
+
+
   // fallback para "Servicios varios" o cualquier otro
   return Layers;
 }

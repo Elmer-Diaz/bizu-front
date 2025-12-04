@@ -139,7 +139,9 @@ export default function Register() {
     if (!form.password) errs.password = "Ingresa una contraseña.";
     if (!form.phone.trim()) errs.phone = "Ingresa tu teléfono.";
     if (!form.city) errs.city = "Selecciona una ciudad.";
-    if (!form.bio.trim()) errs.bio = "Escribe una breve descripción.";
+    if (form.role === "provider" && !form.bio.trim()) {
+      errs.bio = "Escribe una breve descripción.";
+    }
 
     if (form.pricing_note && form.pricing_note.length > 250) {
       errs.pricing_note = "Máximo 250 caracteres.";
@@ -392,21 +394,23 @@ export default function Register() {
             </div>
           </div>
 
-          {/* Bio */}
-          <div>
-            <label className="block text-sm font-medium mb-1">Sobre mí *</label>
-            <textarea
-              name="bio"
-              value={form.bio}
-              onChange={handleChange}
-              required
-              rows={3}
-              className={`w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 ${
-                fieldErrors.bio ? "border-red-300 focus:ring-red-300" : "border-gray-300 focus:ring-[#f4a261]"
-              }`}
-            />
-            {fieldErrors.bio && <p className="mt-1 text-xs text-red-600">{fieldErrors.bio}</p>}
-          </div>
+          {/* Bio solo para servidor */}
+          {form.role === "provider" && (
+            <div>
+              <label className="block text-sm font-medium mb-1">Sobre mí *</label>
+              <textarea
+                name="bio"
+                value={form.bio}
+                onChange={handleChange}
+                required
+                rows={3}
+                className={`w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 ${
+                  fieldErrors.bio ? "border-red-300 focus:ring-red-300" : "border-gray-300 focus:ring-[#f4a261]"
+                }`}
+              />
+              {fieldErrors.bio && <p className="mt-1 text-xs text-red-600">{fieldErrors.bio}</p>}
+            </div>
+          )}
 
           {/* Campos adicionales si es proveedor */}
           {form.role === "provider" && (

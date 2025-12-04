@@ -8,5 +8,7 @@ export const categories = [
   { value: 'Arreglos florales', label: 'Arreglos florales' },
   { value: 'Detalles y regalos', label: 'Detalles y regalos' },
   { value: 'Decoración', label: 'Decoración' },
+  { value: 'Comidas', label: 'Comidas' },
   { value: 'Servicios varios', label: 'Servicios varios' },
+
 ];

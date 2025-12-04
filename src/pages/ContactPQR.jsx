@@ -110,13 +110,7 @@ export default function ContactPQR() {
 
         {/* Info de la empresa */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-8">
-          <div className="flex items-start gap-3 p-4 rounded-lg border">
-            <Building2 className="w-5 h-5 text-[#28364e] mt-1" />
-            <div>
-              <div className="font-semibold">Bizu Servicios</div>
-              <div className="text-sm text-gray-600">NIT -----</div>
-            </div>
-          </div>
+          
           <div className="flex items-start gap-3 p-4 rounded-lg border">
             <Mail className="w-5 h-5 text-[#28364e] mt-1" />
             <div>
@@ -131,20 +125,20 @@ export default function ContactPQR() {
             <div>
               <div className="font-semibold">WhatsApp</div>
               <a
-                href="https://wa.me/573001234567"
+                href="https://wa.me/573125156964"
                 target="_blank"
                 rel="noreferrer"
                 className="text-sm text-[#28364e] underline"
               >
-                +57 xxx xxx xxxx
+                +57 3125156964
               </a>
             </div>
           </div>
-          <div className="md:col-span-3 flex items-start gap-3 p-4 rounded-lg border">
+         <div className="flex items-start gap-3 p-4 rounded-lg border">
             <MapPin className="w-5 h-5 text-[#28364e] mt-1" />
             <div>
               <div className="font-semibold">Dirección</div>
-              <div className="text-sm text-gray-600">-- --- ---</div>
+              <div className="text-sm text-gray-600">Puerto Gaitán</div>
             </div>
           </div>
         </div>
