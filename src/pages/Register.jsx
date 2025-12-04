@@ -540,18 +540,37 @@ export default function Register() {
                 <label className="block text-sm font-medium mb-1">
                   Fotos de tus trabajos (hasta 6)
                 </label>
-                <input
-                  type="file"
-                  name="work_photos"
-                  accept="image/*"
-                  multiple
-                  onChange={handleWorkPhotosChange}
-                  className="w-full"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Puedes seleccionar varias imágenes a la vez. Máximo 6.
-                </p>
 
+                {/* Zona clickeable para seleccionar imágenes */}
+                <label
+                  className={`mt-1 flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition
+                  ${workPhotos.length >= 6
+                    ? "border-gray-300 bg-gray-50 opacity-70 cursor-not-allowed"
+                    : "border-[#f4a261] hover:bg-orange-50"
+                  }`}
+                >
+                  <UploadCloud size={26} className="mb-1 text-[#f4a261]" />
+                  <span className="text-sm text-[#f4a261] font-medium">
+                    {workPhotos.length >= 6
+                      ? "Ya seleccionaste el máximo de 6 imágenes"
+                      : "Haz clic aquí para seleccionar imágenes"}
+                  </span>
+                  <span className="text-xs text-gray-500 mt-1">
+                    Puedes seleccionar varias a la vez. Seleccionadas: {workPhotos.length}/6
+                  </span>
+
+                  <input
+                    type="file"
+                    name="work_photos"
+                    accept="image/*"
+                    multiple
+                    onChange={handleWorkPhotosChange}
+                    className="hidden"
+                    disabled={workPhotos.length >= 6}
+                  />
+                </label>
+
+                {/* Previews */}
                 {workPreviews.length > 0 && (
                   <>
                     <div className="mt-3 text-sm text-gray-600">
@@ -579,6 +598,7 @@ export default function Register() {
                   </>
                 )}
               </div>
+
             </>
           )}
 
