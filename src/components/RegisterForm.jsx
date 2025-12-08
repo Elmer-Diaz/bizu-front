@@ -31,7 +31,6 @@ export default function RegisterForm({ role = "client" }) {
     city: "",
     bio: "",
     category: "",
-    headline: "",
     services: [""],
     schedule: "",
     pricing_note: "",
@@ -79,6 +78,7 @@ export default function RegisterForm({ role = "client" }) {
   };
 
   // Validación mínima en cliente (rápida)
+  // 🔹 Ahora solo valida secciones 1 y 2 + Términos
   const validate = () => {
     const errs = {};
     const email = form.email.trim();
@@ -96,21 +96,14 @@ export default function RegisterForm({ role = "client" }) {
     if (!form.phone.trim()) errs.phone = "Ingresa tu teléfono.";
     if (!form.city) errs.city = "Selecciona una ciudad.";
 
-    if (isProvider && !form.bio.trim()) {
-      errs.bio = "Escribe una breve descripción de tu negocio.";
-    }
-
-    if (isProvider) {
-      if (!form.category) errs.category = "Selecciona una categoría.";
-      form.services.forEach((s, i) => {
-        if (!(s || "").trim())
-          errs[`services_${i}`] = "Completa el servicio o elimínalo.";
-      });
-    }
+    // 🔹 Se elimina la validación de bio, category y services para proveedor
+    // if (isProvider && !form.bio.trim()) { ... }
+    // if (isProvider) { validar category y services }
 
     // Requerir aceptación de Términos
     if (!agreeTerms) {
-      errs.agreeTerms = "Debes aceptar los Términos y Condiciones para continuar.";
+      errs.agreeTerms =
+        "Debes aceptar los Términos y Condiciones para continuar.";
     }
 
     setFieldErrors(errs);
@@ -134,18 +127,13 @@ export default function RegisterForm({ role = "client" }) {
 
     const payload = new FormData();
 
-    // Campos comunes
-    ["email", "full_name", "password", "role", "phone", "city", "bio"].forEach((k) => {
+    // 🔹 Campos comunes: solo lo necesario de las secciones 1 y 2
+    ["email", "full_name", "password", "role", "phone", "city"].forEach((k) => {
       payload.append(k, form[k]);
     });
 
-    // Campos de proveedor solo si aplica
-    if (isProvider) {
-      payload.append("category", form.category);
-      form.services.forEach((s) => payload.append("services", (s || "").trim()));
-      // headline, pricing_note, schedule y work_photos
-      // se completarán luego desde "Editar perfil"
-    }
+    // 🔹 Por ahora NO enviamos categoría, bio ni servicios
+    // Se hará después desde "Editar perfil" de proveedor
 
     try {
       await api.post("/register/", payload, {
@@ -184,7 +172,9 @@ export default function RegisterForm({ role = "client" }) {
           {isProvider ? "Registro de servidor" : "Registro de cliente"}
         </p>
         <h2 className="text-2xl md:text-3xl font-bold text-[#28364e] mb-1">
-          {isProvider ? "Crea tu perfil de Servidor" : "Crea tu cuenta de Cliente"}
+          {isProvider
+            ? "Crea tu perfil de Servidor"
+            : "Crea tu cuenta de Cliente"}
         </h2>
         <p className="text-sm text-gray-600 mb-3">
           {isProvider
@@ -229,10 +219,17 @@ export default function RegisterForm({ role = "client" }) {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6" encType="multipart/form-data" noValidate>
+      <form
+        onSubmit={handleSubmit}
+        className="space-y-6"
+        encType="multipart/form-data"
+        noValidate
+      >
         {/* SECCIÓN 1: Datos básicos */}
         <div className="border rounded-lg p-4 bg-gray-50">
-          <h3 className="text-sm font-semibold text-[#28364e] mb-3">1. Datos básicos</h3>
+          <h3 className="text-sm font-semibold text-[#28364e] mb-3">
+            1. Datos básicos
+          </h3>
 
           {/* Nombre / negocio */}
           <div className="mb-3">
@@ -245,7 +242,9 @@ export default function RegisterForm({ role = "client" }) {
               required
               placeholder={namePlaceholder}
               className={`w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 ${
-                fieldErrors.full_name ? "border-red-300 focus:ring-red-300" : "border-gray-300 focus:ring-[#f4a261]"
+                fieldErrors.full_name
+                  ? "border-red-300 focus:ring-red-300"
+                  : "border-gray-300 focus:ring-[#f4a261]"
               }`}
             />
             {fieldErrors.full_name && (
@@ -255,7 +254,9 @@ export default function RegisterForm({ role = "client" }) {
 
           {/* Email */}
           <div className="mb-3">
-            <label className="block text-sm font-medium mb-1">Correo electrónico *</label>
+            <label className="block text-sm font-medium mb-1">
+              Correo electrónico *
+            </label>
             <input
               type="email"
               name="email"
@@ -264,7 +265,9 @@ export default function RegisterForm({ role = "client" }) {
               required
               placeholder="tucorreo@ejemplo.com"
               className={`w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 ${
-                fieldErrors.email ? "border-red-300 focus:ring-red-300" : "border-gray-300 focus:ring-[#f4a261]"
+                fieldErrors.email
+                  ? "border-red-300 focus:ring-red-300"
+                  : "border-gray-300 focus:ring-[#f4a261]"
               }`}
             />
             {fieldErrors.email && (
@@ -283,7 +286,9 @@ export default function RegisterForm({ role = "client" }) {
               required
               placeholder="Mínimo 8 caracteres recomendados"
               className={`w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 ${
-                fieldErrors.password ? "border-red-300 focus:ring-red-300" : "border-gray-300 focus:ring-[#f4a261]"
+                fieldErrors.password
+                  ? "border-red-300 focus:ring-red-300"
+                  : "border-gray-300 focus:ring-[#f4a261]"
               }`}
             />
             {fieldErrors.password && (
@@ -308,7 +313,9 @@ export default function RegisterForm({ role = "client" }) {
                 required
                 placeholder="Ej: 300 123 4567"
                 className={`w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 ${
-                  fieldErrors.phone ? "border-red-300 focus:ring-red-300" : "border-gray-300 focus:ring-[#f4a261]"
+                  fieldErrors.phone
+                    ? "border-red-300 focus:ring-red-300"
+                    : "border-gray-300 focus:ring-[#f4a261]"
                 }`}
               />
               {fieldErrors.phone && (
@@ -323,7 +330,9 @@ export default function RegisterForm({ role = "client" }) {
                 onChange={handleChange}
                 required
                 className={`w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 ${
-                  fieldErrors.city ? "border-red-300 focus:ring-red-300" : "border-gray-300 focus:ring-[#f4a261]"
+                  fieldErrors.city
+                    ? "border-red-300 focus:ring-red-300"
+                    : "border-gray-300 focus:ring-[#f4a261]"
                 }`}
               >
                 <option value="" disabled hidden>
@@ -342,107 +351,9 @@ export default function RegisterForm({ role = "client" }) {
           </div>
         </div>
 
-        {/* SECCIÓN 3: Info negocio / perfil (solo proveedor) */}
-        {isProvider && (
-          <div className="border rounded-lg p-4 bg-gray-50">
-            <h3 className="text-sm font-semibold text-[#28364e] mb-3">
-              3. Información de tu negocio
-            </h3>
-
-            <div className="mb-3">
-              <label className="block text-sm font-medium mb-1">Sobre tu negocio *</label>
-              <textarea
-                name="bio"
-                value={form.bio}
-                onChange={handleChange}
-                required
-                rows={3}
-                placeholder="Cuenta brevemente qué haces, tu experiencia o especialidades."
-                className={`w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 ${
-                  fieldErrors.bio ? "border-red-300 focus:ring-red-300" : "border-gray-300 focus:ring-[#f4a261]"
-                }`}
-              />
-              {fieldErrors.bio && (
-                <p className="mt-1 text-xs text-red-600">{fieldErrors.bio}</p>
-              )}
-            </div>
-
-            <div className="mb-3">
-              <label className="block text-sm font-medium mb-1">Categoría *</label>
-              <select
-                name="category"
-                value={form.category}
-                onChange={handleChange}
-                required
-                className={`w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 ${
-                  fieldErrors.category
-                    ? "border-red-300 focus:ring-red-300"
-                    : "border-gray-300 focus:ring-[#f4a261]"
-                }`}
-              >
-                <option value="" disabled hidden>
-                  Selecciona una categoría
-                </option>
-                {categories.map((cat) => (
-                  <option key={cat.value} value={cat.value}>
-                    {cat.label}
-                  </option>
-                ))}
-              </select>
-              {fieldErrors.category && (
-                <p className="mt-1 text-xs text-red-600">{fieldErrors.category}</p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Servicios que ofreces *
-              </label>
-              {form.services.map((service, index) => (
-                <div key={index} className="flex items-center gap-2 mb-2">
-                  <input
-                    type="text"
-                    value={service}
-                    onChange={(e) => handleServiceChange(index, e.target.value)}
-                    required
-                    placeholder={
-                      index === 0 ? "Ej: Instalación de grifería" : "Otro servicio..."
-                    }
-                    className={`flex-1 px-4 py-2 border rounded focus:outline-none focus:ring-2 ${
-                      fieldErrors[`services_${index}`]
-                        ? "border-red-300 focus:ring-red-300"
-                        : "border-gray-300 focus:ring-[#f4a261]"
-                    }`}
-                  />
-                  {form.services.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => removeServiceField(index)}
-                      className="text-red-500 hover:text-red-700 text-sm"
-                      title="Quitar servicio"
-                    >
-                      ✕
-                    </button>
-                  )}
-                </div>
-              ))}
-              {Object.keys(fieldErrors)
-                .filter((k) => k.startsWith("services_"))
-                .map((k) => (
-                  <p key={k} className="mt-1 text-xs text-red-600">
-                    {fieldErrors[k]}
-                  </p>
-                ))}
-              <button
-                type="button"
-                onClick={addServiceField}
-                className="text-sm text-[#f4a261] hover:underline"
-              >
-                + Agregar otro servicio
-              </button>
-            </div>
-          </div>
-        )}
+        {/* 🔹 SECCIÓN 3: Información de tu negocio ELIMINADA por ahora
+            {isProvider && (...)}  -> se quitaron esos campos
+        */}
 
         {/* Checkbox de Términos */}
         <div className="pt-2">
@@ -459,7 +370,7 @@ export default function RegisterForm({ role = "client" }) {
               }}
               className="mt-1 h-4 w-4 rounded border-gray-300 text-[#f4a261] focus:ring-[#f4a261]"
             />
-            <span className="text-sm text-gray-700">
+          <span className="text-sm text-gray-700">
               Acepto los{" "}
               <Link to="/terms" target="_blank" className="text-[#f4a261] underline">
                 Términos y Condiciones
@@ -476,7 +387,9 @@ export default function RegisterForm({ role = "client" }) {
           type="submit"
           disabled={isSubmitting}
           className={`w-full text-white font-semibold py-2.5 rounded-lg transition-colors ${
-            isSubmitting ? "bg-gray-400 cursor-not-allowed" : "bg-[#f4a261] hover:bg-[#e07b19]"
+            isSubmitting
+              ? "bg-gray-400 cursor-not-allowed"
+              : "bg-[#f4a261] hover:bg-[#e07b19]"
           }`}
         >
           {isSubmitting
