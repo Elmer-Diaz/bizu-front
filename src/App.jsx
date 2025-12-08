@@ -23,7 +23,8 @@ import AdminContactMessages from "./pages/AdminContactMessages";
 import ChatThreadPage from "./pages/ChatThreadPage";
 import ChatThreadsList from "./pages/ChatThreadsList";
 import ChatInboxPage from "./pages/ChatInboxPage";
-
+import RegisterClient from "./pages/RegisterClient";
+import RegisterProvider from "./pages/RegisterProvider";
 
 
 function App() {
@@ -36,7 +37,9 @@ function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<GuestRoute> <Login /></GuestRoute>} />
-            <Route path="/register" element={<GuestRoute><Register /></GuestRoute>} />
+            {/* <Route path="/register" element={<GuestRoute><Register /></GuestRoute>} /> */}
+            <Route path="/register/client" element={<RegisterClient />} />
+            <Route path="/register/provider" element={<RegisterProvider />} />
             <Route path="/profile/:uuid" element={<Profile />} />
             <Route path="/search" element={<Search />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />

@@ -1,5 +1,5 @@
 import { useState, useContext, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Mail, Lock, Eye, EyeOff, XCircle, X as CloseIcon, AlertCircle } from "lucide-react";
 import api from "../api";
 import { AuthContext } from "../context/AuthContext.jsx";
@@ -67,7 +67,7 @@ export default function Login() {
         email: form.email.trim(),
         password: form.password,
       });
-      
+
 
       const { access, refresh, uuid, full_name, role } = data;
       localStorage.setItem("access", access);
@@ -158,11 +158,10 @@ export default function Login() {
                 name="email"
                 value={form.email}
                 onChange={handleChange}
-                className={`w-full pl-10 pr-4 py-2 border rounded focus:outline-none focus:ring-2 ${
-                  fieldErrors.email
+                className={`w-full pl-10 pr-4 py-2 border rounded focus:outline-none focus:ring-2 ${fieldErrors.email
                     ? "border-red-300 focus:ring-red-300"
                     : "border-gray-300 focus:ring-[#f4a261]"
-                }`}
+                  }`}
                 placeholder="correo@ejemplo.com"
                 required
                 autoComplete="email"
@@ -192,11 +191,10 @@ export default function Login() {
                 name="password"
                 value={form.password}
                 onChange={handleChange}
-                className={`w-full pl-10 pr-10 py-2 border rounded focus:outline-none focus:ring-2 ${
-                  fieldErrors.password
+                className={`w-full pl-10 pr-10 py-2 border rounded focus:outline-none focus:ring-2 ${fieldErrors.password
                     ? "border-red-300 focus:ring-red-300"
                     : "border-gray-300 focus:ring-[#f4a261]"
-                }`}
+                  }`}
                 placeholder="********"
                 required
                 autoComplete="current-password"
@@ -233,12 +231,24 @@ export default function Login() {
           </button>
         </form>
 
-        <p className="mt-6 text-sm text-center text-gray-600">
-          ¿No tienes cuenta?{" "}
-          <a href="/register" className="text-[#f4a261] hover:underline">
-            Regístrate
-          </a>
-        </p>
+        <div className="mt-6 text-center text-sm text-gray-600 space-y-2">
+          <p className="font-medium">¿No tienes cuenta?</p>
+          <div className="flex flex-col gap-2">
+            <Link
+              to="/register/client"
+              className="inline-block text-[#f4a261] hover:underline font-semibold"
+            >
+              Regístrate como Cliente
+            </Link>
+            <Link
+              to="/register/provider"
+              className="inline-block text-[#28364e] hover:text-[#f4a261] font-semibold"
+            >
+              Registra tu negocio como Servidor
+            </Link>
+          </div>
+        </div>
+
       </div>
     </div>
   );
