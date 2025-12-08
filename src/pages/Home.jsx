@@ -42,7 +42,7 @@ export default function Home() {
   return (
     <div className="bg-gray-100 text-[#28364e] font-sans">
       {/* HERO */}
-      <section className="bg-[#28364e] text-white text-center py-24 px-6">
+      <section className="bg-[#28364e] text-white text-center py-18 px-6">
         <div className="max-w-3xl mx-auto">
           <p className="text-xs font-semibold tracking-[0.2em] uppercase text-[#f4a261] mb-3">
             Puerto Gaitán · Servicios locales
