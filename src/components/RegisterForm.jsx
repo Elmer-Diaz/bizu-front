@@ -28,7 +28,7 @@ export default function RegisterForm({ role = "client" }) {
 
 
   const nameLabel = isProvider
-    ? "Nombre del negocio o emprendimiento *"
+    ? "Nombre del negocio o tuyo *"
     : "Nombre completo *";
 
   const namePlaceholder = isProvider
