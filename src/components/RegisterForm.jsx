@@ -6,12 +6,26 @@ import { cities } from "../constants/cities";
 import api from "../api"; // instancia con interceptores
 import { useToast } from "../components/ToastProvider";
 import { getErrorMessage } from "../utils/errors";
+import { FaWhatsapp } from "react-icons/fa";
+
 
 export default function RegisterForm({ role = "client" }) {
   const navigate = useNavigate();
   const { success: toastSuccess, error: toastError } = useToast();
 
   const isProvider = role === "provider";
+
+  const WHATSAPP_NUMBER = "573125156964";
+  const whatsappMessage = (role) => `Hola, necesito ayuda para registrarme como ${role === "provider" ? "Servidor" : "Cliente"}. ¿Me puedes orientar?`;
+
+
+  const openWhatsappHelp = () => {
+    const msg = encodeURIComponent(whatsappMessage(role));
+    // wa.me funciona bien en desktop y móvil
+    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`, "_blank", "noopener,noreferrer");
+  };
+
+
 
   const nameLabel = isProvider
     ? "Nombre del negocio o emprendimiento *"
@@ -207,6 +221,55 @@ export default function RegisterForm({ role = "client" }) {
           </span>
         </div>
       </div>
+
+      {/* Callout flotante de ayuda por WhatsApp */}
+        <div className="fixed bottom-5 right-5 z-50 w-[calc(100%-2.5rem)] max-w-sm">
+          {/* ✅ MÓVIL (solo nota + botón) */}
+          <div className="sm:hidden rounded-2xl border border-green-100 bg-white/95 p-3 shadow-2xl backdrop-blur">
+            <p className="text-xs font-semibold text-[#28364e]">
+              ¿Necesitas ayuda para registrarte?
+            </p>
+
+            <button
+              type="button"
+              onClick={openWhatsappHelp}
+              className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-full bg-green-600 px-4 py-2.5 text-xs font-semibold text-white shadow-md hover:bg-green-700 hover:shadow-lg transition active:scale-[0.98] focus:outline-none focus:ring-4 focus:ring-green-200"
+            >
+              <FaWhatsapp className="h-4 w-4" />
+              Hablar por WhatsApp
+            </button>
+          </div>
+
+          {/* ✅ DESKTOP/TABLET (callout completo) */}
+          <div className="hidden sm:block relative overflow-hidden rounded-2xl border border-green-100 bg-white/95 p-4 shadow-2xl backdrop-blur">
+            <div className="absolute left-0 top-0 h-full w-1.5 bg-gradient-to-b from-green-500 to-emerald-400" />
+
+            <div className="pl-3">
+              <p className="text-sm font-semibold text-[#28364e]">
+                ¿Necesitas ayuda para registrarte?
+              </p>
+
+              <p className="mt-1 text-xs leading-relaxed text-gray-600">
+                Escríbenos por WhatsApp y te asesoramos para completar tu registro como{" "}
+                <span className="font-semibold">{isProvider ? "Servidor" : "Cliente"}</span>.
+              </p>
+
+              <div className="mt-3 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={openWhatsappHelp}
+                  className="inline-flex items-center justify-center gap-2 rounded-full bg-green-600 px-4 py-2 text-xs font-semibold text-white shadow-md hover:bg-green-700 hover:shadow-lg transition active:scale-[0.98] focus:outline-none focus:ring-4 focus:ring-green-200"
+                >
+                  <FaWhatsapp className="h-4 w-4" />
+                  Hablar por WhatsApp
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+
+
 
       {/* Banner fijo de error (validación/servidor) */}
       {inlineError && (

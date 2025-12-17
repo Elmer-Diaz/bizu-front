@@ -127,7 +127,11 @@ export default function Navbar() {
             <li>
               <Link to="/search" className="hover:text-[#f4a261]">Buscar</Link>
             </li>
-            {/* Contáctanos SIEMPRE visible */}
+            <li>
+              <Link to="/quienes-somos" className="hover:text-[#f4a261]">
+                Quiénes somos
+              </Link>
+            </li>
             <li>
               <Link to="/contacto" className="hover:text-[#f4a261]">Contáctanos</Link>
             </li>
@@ -179,6 +183,9 @@ export default function Navbar() {
         {isOpen && (
           <ul className="md:hidden flex flex-col bg-[#28364e] text-white rounded-lg shadow-lg pb-4">
             <li>
+              <Link to="/" className="block px-4 py-2 hover:bg-[#f4a261] hover:text-white">Inicio</Link>
+            </li>
+            <li>
               <Link
                 to="/search"
                 className="block px-4 py-2 hover:bg-[#f4a261] hover:text-white"
@@ -187,7 +194,16 @@ export default function Navbar() {
                 Buscar
               </Link>
             </li>
-            {/* Contáctanos SIEMPRE visible */}
+            <li>
+              <Link
+                to="/quienes-somos"
+                className="block px-4 py-2 hover:bg-[#f4a261] hover:text-white"
+                onClick={() => setIsOpen(false)}
+              >
+                Quiénes somos
+              </Link>
+            </li>
+
             <li>
               <Link
                 to="/contacto"

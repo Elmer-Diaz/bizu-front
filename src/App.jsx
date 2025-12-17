@@ -25,6 +25,8 @@ import ChatThreadsList from "./pages/ChatThreadsList";
 import ChatInboxPage from "./pages/ChatInboxPage";
 import RegisterClient from "./pages/RegisterClient";
 import RegisterProvider from "./pages/RegisterProvider";
+import WhoWeAre from "./pages/WhoWeAre";
+
 
 
 function App() {
@@ -55,6 +57,9 @@ function App() {
             <Route path="/chats" element={<ChatInboxPage />} />
             {/* <Route path="/chats" element={<ChatThreadsList />} /> */}
             <Route path="/chat/:threadUuid" element={<ChatThreadPage />} />
+            <Route path="/quienes-somos" element={<WhoWeAre />} />
+
+
 
           </Routes>
         </main>

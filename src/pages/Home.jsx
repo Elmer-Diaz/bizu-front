@@ -49,12 +49,13 @@ export default function Home() {
           </p>
 
           <h1 className="text-4xl md:text-5xl font-extrabold mb-4 leading-tight">
-            Registra tu negocio <span className="text-[#f4a261]">GRATIS</span> y llega a más
+            Registra tu negocio o servicio personal <span className="text-[#f4a261]">GRATIS</span> y llega a más
             clientes con Bizu.
           </h1>
 
           <p className="text-lg md:text-xl mb-2 text-gray-100">
             El directorio de servicios donde los clientes te encuentran en minutos.
+            No necesitas tener empresa; si trabajas por tu cuenta, Bizu también es para ti.
           </p>
           <p className="text-sm md:text-base mb-8 text-gray-300">
             Consigue más visibilidad, más contactos y más oportunidades, todo en un solo lugar.
@@ -66,7 +67,7 @@ export default function Home() {
               to="/register/provider"
               className="bg-[#f4a261] hover:bg-[#e07b19] text-white py-3 px-6 rounded text-lg font-semibold shadow-md"
             >
-              Registra tu negocio GRATIS
+              Registrar mi negocio o servicio GRATIS
             </Link>
 
             {/* Registrarse como cliente */}
