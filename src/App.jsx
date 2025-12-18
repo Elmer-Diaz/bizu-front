@@ -26,6 +26,7 @@ import ChatInboxPage from "./pages/ChatInboxPage";
 import RegisterClient from "./pages/RegisterClient";
 import RegisterProvider from "./pages/RegisterProvider";
 import WhoWeAre from "./pages/WhoWeAre";
+import ProviderPending from "./pages/ProviderPending";
 
 
 
@@ -58,6 +59,7 @@ function App() {
             {/* <Route path="/chats" element={<ChatThreadsList />} /> */}
             <Route path="/chat/:threadUuid" element={<ChatThreadPage />} />
             <Route path="/quienes-somos" element={<WhoWeAre />} />
+            <Route path="/register/provider/pending" element={<ProviderPending />} />
 
 
 

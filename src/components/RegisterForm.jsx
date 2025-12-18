@@ -154,8 +154,12 @@ export default function RegisterForm({ role = "client" }) {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      toastSuccess("Registro exitoso. Serás redirigido al login.");
-      setTimeout(() => navigate("/login"), 1400);
+      toastSuccess("Registro exitoso.");
+      setTimeout(() => {
+        if (isProvider) navigate("/register/provider/pending");
+        else navigate("/login");
+      }, 900);
+
     } catch (err) {
       const data = err?.response?.data;
       let msg = getErrorMessage(err, "Error en el registro");
