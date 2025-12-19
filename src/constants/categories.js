@@ -9,6 +9,6 @@ export const categories = [
   { value: 'Detalles y regalos', label: 'Detalles y regalos' },
   { value: 'Decoración', label: 'Decoración' },
   { value: 'Comidas', label: 'Comidas' },
+  { value: 'Hoteles', label: 'Hoteles' },
   { value: 'Servicios varios', label: 'Servicios varios' },
-
 ];
