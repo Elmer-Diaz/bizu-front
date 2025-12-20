@@ -190,7 +190,7 @@ const Search = () => {
                 {providers.map((p) => {
                   const ratingAvg = Number(p.rating_avg || 0);
                   const ratingCount = Number(p.rating_count || 0);
-                  const waNumber = (p.phone || "").replace(/\D/g, ""); 
+                  let waNumber = (p.phone || "").replace(/\D/g, "");
                   if (waNumber && !waNumber.startsWith("57")) {
                     waNumber = `57${waNumber}`;
                   }
