@@ -165,7 +165,8 @@ export default function PublicProfile() {
   const isOwnProfile = myUuid === uuid;
 
   // WhatsApp
-  const waNumber = (phone || "").replace(/\D/g, "");
+  const clean = (phone || "").replace(/\D/g, "");
+  const waNumber = clean.length === 10 ? `57${clean}` : clean;
   const waText = encodeURIComponent(`Hola ${full_name || ""}, te contacto desde Bizu.`);
   const waLink = `https://wa.me/${waNumber}?text=${waText}`;
   const showWhatsappButton = Boolean(user) && Boolean(waNumber) && !isOwnProfile;
