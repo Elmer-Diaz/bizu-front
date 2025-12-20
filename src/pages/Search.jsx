@@ -190,7 +190,11 @@ const Search = () => {
                 {providers.map((p) => {
                   const ratingAvg = Number(p.rating_avg || 0);
                   const ratingCount = Number(p.rating_count || 0);
-                  const waNumber = (p.phone || "").replace(/\D/g, ""); // ⬅️ requiere que backend envíe phone
+                  const waNumber = (p.phone || "").replace(/\D/g, ""); 
+                  if (waNumber && !waNumber.startsWith("57")) {
+                    waNumber = `57${waNumber}`;
+                  }
+
                   const canWhatsApp = Boolean(user) && Boolean(waNumber);
                   const waText = encodeURIComponent(`Hola ${p.full_name || ""}, te contacto desde Bizu.`);
                   const waLink = `https://wa.me/${waNumber}?text=${waText}`;
